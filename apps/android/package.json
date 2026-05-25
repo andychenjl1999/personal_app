@@ -1,0 +1,19 @@
+{
+  "name": "@personal-app/android",
+  "private": true,
+  "main": "expo/AppEntry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "expo": "^56.0.4",
+    "expo-status-bar": "^3.0.9",
+    "react": "^19.2.6",
+    "react-native": "^0.85.3"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.15"
+  }
+}

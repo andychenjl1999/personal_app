@@ -1,0 +1,23 @@
+{
+  "name": "personal-app-v2",
+  "private": true,
+  "packageManager": "npm@10.9.3",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace @personal-app/web",
+    "build:web": "npm run build --workspace @personal-app/web",
+    "start:web": "npm run start --workspace @personal-app/web",
+    "typecheck:web": "npm run typecheck --workspace @personal-app/web",
+    "dev:android": "npm run start --workspace @personal-app/android",
+    "android": "npm run android --workspace @personal-app/android",
+    "typecheck:android": "npm run typecheck --workspace @personal-app/android",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "prettier": "^3.6.0",
+    "typescript": "^6.0.3"
+  }
+}

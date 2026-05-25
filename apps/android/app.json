@@ -1,0 +1,14 @@
+{
+  "expo": {
+    "name": "Personal App",
+    "slug": "personal-app-v2",
+    "scheme": "personalappv2",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "android": {
+      "package": "com.personalappv2.app"
+    }
+  }
+}
