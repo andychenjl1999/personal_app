@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This file defines the working contract for this repository while the personal app is still being bootstrapped.
+This file defines the working contract for this repository while the personal app platform is being built and extended.
 
-The repo is currently stack-agnostic. Do not assume a framework, package manager, formatter, linter, test runner, deployment target, or folder structure until those choices are committed to the repo.
+The current stack is established in the repo. Do not invent additional frameworks, tooling, deployment rules, or folder conventions beyond what is already committed without documenting the reason.
 
 ## Core Principles
 
@@ -30,13 +30,27 @@ The repo is currently stack-agnostic. Do not assume a framework, package manager
 ## Git And GitHub Workflow
 
 - Use Git and GitHub as the system of record for code, docs, and decision history.
-- Initialize Git before meaningful implementation work if it is not already initialized.
 - Prefer short-lived branches, even for solo development.
+- Use `main` as the protected default branch.
 - Keep commits small and logically grouped.
 - Write meaningful commit messages in plain English that describe the change and intent.
 - Avoid vague commit messages such as `update`, `misc`, or `fix stuff`.
 - Before making a commit, confirm the diff contains only intentional changes.
 - Do not rewrite published history unless there is a clear reason and it is explicitly intended.
+- Prefer merging reviewed or intentionally finalized work into `main` rather than pushing incomplete work directly.
+
+## GitHub Repository Settings
+
+- Configure branch protection for `main`.
+- Require pull requests before merging into `main`, even if the repo is primarily solo-maintained.
+- Require the branch to be up to date before merging once CI exists.
+- Restrict force pushes to `main`.
+- Restrict branch deletion for `main`.
+- Enable conversation resolution before merge once pull-request review becomes part of the workflow.
+- Enable automatic deletion of head branches after merge.
+- Keep repository visibility and access scoped intentionally; do not leave collaborator access broader than needed.
+- Store production secrets in GitHub or hosting-provider secret managers, never in committed files.
+- When CI is added, wire required status checks into branch protection and keep AGENTS.md aligned with the exact check names.
 
 ## Documentation Expectations
 
@@ -59,6 +73,8 @@ The repo is currently stack-agnostic. Do not assume a framework, package manager
 - If the repo does not yet define a standard, choose the simplest reasonable default and document it when it becomes important.
 - Make documentation updates part of task completion when the task changes behavior, structure, or decisions.
 - Flag gaps or ambiguities instead of silently inventing policy where the project has not decided yet.
+- Add meaningful comments for each non-trivial code logic block, especially validation, branching rules, data transformations, persistence, sorting, and side effects.
+- Comments should explain intent and constraints; do not add comments that merely restate obvious syntax.
 
 ## Future Evolution
 
