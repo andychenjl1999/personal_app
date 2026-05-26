@@ -102,6 +102,7 @@ button {
 }
 
 .todo-form label,
+.list-toolbar label,
 .todo-title-field,
 .todo-field-grid label {
   display: grid;
@@ -109,6 +110,7 @@ button {
 }
 
 .todo-form span,
+.list-toolbar span,
 .todo-title-field span,
 .todo-field-grid span {
   color: var(--muted);
@@ -118,6 +120,7 @@ button {
 
 .todo-form input,
 .todo-form select,
+.list-toolbar select,
 .todo-title-field input,
 .todo-field-grid input,
 .todo-field-grid select {
@@ -132,6 +135,7 @@ button {
 
 .todo-form input:focus,
 .todo-form select:focus,
+.list-toolbar select:focus,
 .todo-title-field input:focus,
 .todo-field-grid input:focus,
 .todo-field-grid select:focus {
@@ -162,6 +166,31 @@ button {
   gap: 12px;
 }
 
+.list-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+  justify-content: space-between;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.list-toolbar label {
+  min-width: 220px;
+}
+
+.list-toolbar button {
+  min-height: 42px;
+  border-radius: 7px;
+  background: var(--surface-muted);
+  color: var(--text);
+  font-weight: 700;
+  padding: 0 14px;
+}
+
 .empty-state {
   margin: 0;
   padding: 24px;
@@ -172,6 +201,33 @@ button {
   display: grid;
   gap: 16px;
   padding: 18px;
+}
+
+.todo-title-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: end;
+}
+
+.complete-control {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-width: 70px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.complete-control input {
+  width: 24px;
+  height: 24px;
+  accent-color: var(--accent);
+}
+
+.complete-control input:disabled {
+  cursor: not-allowed;
 }
 
 .todo-field-grid {
@@ -187,7 +243,12 @@ button {
 
   .todo-header,
   .todo-workspace,
+  .todo-title-row,
   .todo-field-grid {
     grid-template-columns: 1fr;
+  }
+
+  .complete-control {
+    justify-items: start;
   }
 }

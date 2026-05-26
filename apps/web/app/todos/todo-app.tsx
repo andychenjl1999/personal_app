@@ -22,6 +22,9 @@ type TodoDraft = {
   reminderTime: string;
 };
 
+type SortField = 'createdAt' | 'name' | 'priority' | 'dueDate' | 'reminderTime' | 'status';
+type SortDirection = 'asc' | 'desc';
+
 const initialDraft: TodoDraft = {
   title: '',
   priority: 'medium',
@@ -43,11 +46,34 @@ const priorityLabels: Record<TodoPriority, string> = {
   high: 'High',
 };
 
+const priorityRank: Record<TodoPriority, number> = {
+  low: 1,
+  medium: 2,
+  high: 3,
+};
+
+const statusRank: Record<TodoStatus, number> = {
+  planned: 1,
+  'in-progress': 2,
+  completed: 3,
+};
+
+const sortLabels: Record<SortField, string> = {
+  createdAt: 'Created',
+  name: 'Name',
+  priority: 'Priority',
+  dueDate: 'Due date',
+  reminderTime: 'Reminder time',
+  status: 'Status',
+};
+
 export default function TodoApp() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [draft, setDraft] = useState<TodoDraft>(initialDraft);
   const [error, setError] = useState('');
   const [hasLoadedTodos, setHasLoadedTodos] = useState(false);
+  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   useEffect(() => {
     // Loading happens after hydration so browser storage is only touched on the client.
@@ -110,6 +136,62 @@ export default function TodoApp() {
       ),
     );
   }
+
+  function completeTodo(todoId: string) {
+    // Completion is intentionally one-way in this version so a checked item cannot drift back into active work accidentally.
+    updateTodo(todoId, { status: 'completed' });
+  }
+
+  function compareOptionalValues(left?: string, right?: string) {
+    // Blank due dates and reminder times sort after populated values in ascending order; direction reversal handles descending.
+    if (!left && !right) {
+      return 0;
+    }
+
+    if (!left) {
+      return 1;
+    }
+
+    if (!right) {
+      return -1;
+    }
+
+    return left.localeCompare(right);
+  }
+
+  function compareTodos(left: Todo, right: Todo) {
+    // Each sort field maps to the same ordered comparison contract before the selected direction is applied.
+    const directionMultiplier = sortDirection === 'asc' ? 1 : -1;
+    let result = 0;
+
+    if (sortField === 'name') {
+      result = left.title.localeCompare(right.title);
+    }
+
+    if (sortField === 'priority') {
+      result = priorityRank[left.priority] - priorityRank[right.priority];
+    }
+
+    if (sortField === 'dueDate') {
+      result = compareOptionalValues(left.dueDate, right.dueDate);
+    }
+
+    if (sortField === 'reminderTime') {
+      result = compareOptionalValues(left.reminderTime, right.reminderTime);
+    }
+
+    if (sortField === 'status') {
+      result = statusRank[left.status] - statusRank[right.status];
+    }
+
+    if (sortField === 'createdAt') {
+      result = left.createdAt.localeCompare(right.createdAt);
+    }
+
+    return result * directionMultiplier;
+  }
+
+  const sortedTodos = [...todos].sort(compareTodos);
 
   return (
     <main className="todo-shell">
@@ -194,43 +276,84 @@ export default function TodoApp() {
         </form>
 
         <div className="todo-list" aria-live="polite">
+          <div className="list-toolbar">
+            <label>
+              <span>Sort by</span>
+              <select
+                value={sortField}
+                onChange={(event) =>
+                  setSortField(event.target.value as SortField)
+                }
+              >
+                {Object.entries(sortLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              onClick={() =>
+                setSortDirection((currentDirection) =>
+                  currentDirection === 'asc' ? 'desc' : 'asc',
+                )
+              }
+            >
+              {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
+            </button>
+          </div>
+
           {todos.length === 0 ? (
             <p className="empty-state">No todos yet. Create one to start.</p>
           ) : (
-            todos.map((todo) => (
+            sortedTodos.map((todo) => (
               <article className="todo-item" key={todo.id}>
-                <label className="todo-title-field">
-                  <span>Title</span>
-                  <input
-                    type="text"
-                    value={todo.title}
-                    onChange={(event) =>
-                      updateTodo(todo.id, { title: event.target.value })
-                    }
-                    onBlur={(event) =>
-                      updateTodo(todo.id, {
-                        title: event.target.value.trim() || todo.title,
-                      })
-                    }
-                  />
-                </label>
+                <div className="todo-title-row">
+                  <label className="complete-control">
+                    <input
+                      type="checkbox"
+                      checked={todo.status === 'completed'}
+                      disabled={todo.status === 'completed'}
+                      onChange={() => completeTodo(todo.id)}
+                    />
+                    <span>Complete</span>
+                  </label>
+
+                  <label className="todo-title-field">
+                    <span>Title</span>
+                    <input
+                      type="text"
+                      value={todo.title}
+                      onChange={(event) =>
+                        updateTodo(todo.id, { title: event.target.value })
+                      }
+                      onBlur={(event) =>
+                        updateTodo(todo.id, {
+                          title: event.target.value.trim() || todo.title,
+                        })
+                      }
+                    />
+                  </label>
+                </div>
 
                 <div className="todo-field-grid">
                   <label>
                     <span>Status</span>
                     <select
                       value={todo.status}
+                      disabled={todo.status === 'completed'}
                       onChange={(event) =>
                         updateTodo(todo.id, {
                           status: event.target.value as TodoStatus,
                         })
                       }
                     >
-                      {Object.entries(statusLabels).map(([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      ))}
+                      <option value="planned">Planned</option>
+                      <option value="in-progress">In progress</option>
+                      {todo.status === 'completed' ? (
+                        <option value="completed">Completed</option>
+                      ) : null}
                     </select>
                   </label>
 
