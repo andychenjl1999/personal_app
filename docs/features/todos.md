@@ -9,14 +9,16 @@ The todo list is the first web feature for the personal app platform. The first 
 - `title`: required non-empty text.
 - `status`: required after creation. New todos are always created as `planned`.
 - `priority`: required, one of `low`, `medium`, or `high`.
-- `dueDate`: optional date in `YYYY-MM-DD` format.
-- `reminderTime`: optional time in `HH:mm` format.
+- `dueDate`: optional Unix timestamp in seconds. It represents 12:00am on the selected due date in the user's local timezone.
+- `reminderTime`: optional Unix timestamp in seconds. It represents the selected local date and time, specific to the minute.
 - `createdAt`: internal timestamp used for the default newest-first order.
 
 ## Web Behavior
 
 - Users can create todos from the main web interface.
 - Users can update todo fields inline in the list.
+- Users select due dates with a date input.
+- Users select reminders with a date-and-time input.
 - Users can mark a todo complete with a checkbox.
 - Completing a todo sets its status to `completed`.
 - A completed todo checkbox cannot be unchecked in this first version.
@@ -38,6 +40,8 @@ Each sort can toggle between ascending and descending direction. Optional due da
 
 ## Persistence
 
-Todos are stored under the `localStorage` key `personal-app-v2.todos`. This is intentionally frontend-only for the first implementation pass.
+Todos are stored under the `localStorage` key `personal-app-v2.todos.v2`. This is intentionally frontend-only for the first implementation pass.
+
+The `v2` storage key resets the earlier string-based date schema. Old `personal-app-v2.todos` browser data is not migrated.
 
 Supabase persistence, cross-device sync, reminders, and Android support are future follow-up work.

@@ -10,8 +10,8 @@ type Todo = {
   title: string;
   status: TodoStatus;
   priority: TodoPriority;
-  dueDate?: string;
-  reminderTime?: string;
+  dueDate?: number;
+  reminderTime?: number;
   createdAt: string;
 };
 
@@ -38,7 +38,8 @@ const initialDraft: TodoDraft = {
   reminderTime: '',
 };
 
-const storageKey = 'personal-app-v2.todos';
+const legacyStorageKey = 'personal-app-v2.todos';
+const storageKey = 'personal-app-v2.todos.v2';
 
 const statusLabels: Record<TodoStatus, string> = {
   planned: 'Planned',
@@ -73,6 +74,72 @@ const sortLabels: Record<SortField, string> = {
   status: 'Status',
 };
 
+function unixSecondsToDate(unixSeconds: number) {
+  return new Date(unixSeconds * 1000);
+}
+
+function dateInputToLocalMidnightUnixSeconds(value: string) {
+  // Date inputs are date-only values; construct with local components so the stored timestamp is local midnight.
+  if (!value) {
+    return undefined;
+  }
+
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) {
+    return undefined;
+  }
+
+  return Math.floor(
+    new Date(year, month - 1, day, 0, 0, 0, 0).getTime() / 1000,
+  );
+}
+
+function datetimeLocalInputToUnixSeconds(value: string) {
+  // `datetime-local` omits timezone information, so parse the parts manually as local wall-clock time.
+  if (!value) {
+    return undefined;
+  }
+
+  const [datePart, timePart] = value.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hour, minute] = timePart.split(':').map(Number);
+  if (!year || !month || !day || Number.isNaN(hour) || Number.isNaN(minute)) {
+    return undefined;
+  }
+
+  return Math.floor(
+    new Date(year, month - 1, day, hour, minute, 0, 0).getTime() / 1000,
+  );
+}
+
+function unixSecondsToDateInput(value?: number) {
+  if (value === undefined) {
+    return '';
+  }
+
+  const date = unixSecondsToDate(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function unixSecondsToDatetimeLocalInput(value?: number) {
+  if (value === undefined) {
+    return '';
+  }
+
+  const date = unixSecondsToDate(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hour = String(date.getHours()).padStart(2, '0');
+  const minute = String(date.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hour}:${minute}`;
+}
+
 export default function TodoApp() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [draft, setDraft] = useState<TodoDraft>(initialDraft);
@@ -82,6 +149,9 @@ export default function TodoApp() {
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   useEffect(() => {
+    // The timestamp schema intentionally resets earlier string-based localStorage data.
+    window.localStorage.removeItem(legacyStorageKey);
+
     // Loading happens after hydration so browser storage is only touched on the client.
     const rawTodos = window.localStorage.getItem(storageKey);
     if (!rawTodos) {
@@ -124,8 +194,8 @@ export default function TodoApp() {
       title,
       status: 'planned',
       priority: draft.priority,
-      dueDate: draft.dueDate || undefined,
-      reminderTime: draft.reminderTime || undefined,
+      dueDate: dateInputToLocalMidnightUnixSeconds(draft.dueDate),
+      reminderTime: datetimeLocalInputToUnixSeconds(draft.reminderTime),
       createdAt: new Date().toISOString(),
     };
 
@@ -148,21 +218,21 @@ export default function TodoApp() {
     updateTodo(todoId, { status: 'completed' });
   }
 
-  function compareOptionalValues(left?: string, right?: string) {
+  function compareOptionalTimestamps(left?: number, right?: number) {
     // Blank due dates and reminder times sort after populated values in ascending order; direction reversal handles descending.
-    if (!left && !right) {
+    if (left === undefined && right === undefined) {
       return 0;
     }
 
-    if (!left) {
+    if (left === undefined) {
       return 1;
     }
 
-    if (!right) {
+    if (right === undefined) {
       return -1;
     }
 
-    return left.localeCompare(right);
+    return left - right;
   }
 
   function compareTodos(left: Todo, right: Todo) {
@@ -179,11 +249,11 @@ export default function TodoApp() {
     }
 
     if (sortField === 'dueDate') {
-      result = compareOptionalValues(left.dueDate, right.dueDate);
+      result = compareOptionalTimestamps(left.dueDate, right.dueDate);
     }
 
     if (sortField === 'reminderTime') {
-      result = compareOptionalValues(left.reminderTime, right.reminderTime);
+      result = compareOptionalTimestamps(left.reminderTime, right.reminderTime);
     }
 
     if (sortField === 'status') {
@@ -263,9 +333,9 @@ export default function TodoApp() {
           </label>
 
           <label>
-            <span>Reminder time</span>
+            <span>Reminder</span>
             <input
-              type="time"
+              type="datetime-local"
               value={draft.reminderTime}
               onChange={(event) =>
                 setDraft((currentDraft) => ({
@@ -316,16 +386,6 @@ export default function TodoApp() {
             sortedTodos.map((todo) => (
               <article className="todo-item" key={todo.id}>
                 <div className="todo-title-row">
-                  <label className="complete-control">
-                    <input
-                      type="checkbox"
-                      checked={todo.status === 'completed'}
-                      disabled={todo.status === 'completed'}
-                      onChange={() => completeTodo(todo.id)}
-                    />
-                    <span>Complete</span>
-                  </label>
-
                   <label className="todo-title-field">
                     <span>Title</span>
                     <input
@@ -385,10 +445,12 @@ export default function TodoApp() {
                     <span>Due date</span>
                     <input
                       type="date"
-                      value={todo.dueDate ?? ''}
+                      value={unixSecondsToDateInput(todo.dueDate)}
                       onChange={(event) =>
                         updateTodo(todo.id, {
-                          dueDate: event.target.value || undefined,
+                          dueDate: dateInputToLocalMidnightUnixSeconds(
+                            event.target.value,
+                          ),
                         })
                       }
                     />
@@ -397,13 +459,25 @@ export default function TodoApp() {
                   <label>
                     <span>Reminder</span>
                     <input
-                      type="time"
-                      value={todo.reminderTime ?? ''}
+                      type="datetime-local"
+                      value={unixSecondsToDatetimeLocalInput(todo.reminderTime)}
                       onChange={(event) =>
                         updateTodo(todo.id, {
-                          reminderTime: event.target.value || undefined,
+                          reminderTime: datetimeLocalInputToUnixSeconds(
+                            event.target.value,
+                          ),
                         })
                       }
+                    />
+                  </label>
+
+                  <label className="complete-control">
+                    <span>Complete</span>
+                    <input
+                      type="checkbox"
+                      checked={todo.status === 'completed'}
+                      disabled={todo.status === 'completed'}
+                      onChange={() => completeTodo(todo.id)}
                     />
                   </label>
                 </div>
