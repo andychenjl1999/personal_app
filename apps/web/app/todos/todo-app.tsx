@@ -22,7 +22,13 @@ type TodoDraft = {
   reminderTime: string;
 };
 
-type SortField = 'createdAt' | 'name' | 'priority' | 'dueDate' | 'reminderTime' | 'status';
+type SortField =
+  | 'createdAt'
+  | 'name'
+  | 'priority'
+  | 'dueDate'
+  | 'reminderTime'
+  | 'status';
 type SortDirection = 'asc' | 'desc';
 
 const initialDraft: TodoDraft = {
