@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 
 type TodoStatus = 'planned' | 'in-progress' | 'completed';
 type TodoPriority = 'low' | 'medium' | 'high';
@@ -29,6 +29,8 @@ const initialDraft: TodoDraft = {
   reminderTime: '',
 };
 
+const storageKey = 'personal-app-v2.todos';
+
 const statusLabels: Record<TodoStatus, string> = {
   planned: 'Planned',
   'in-progress': 'In progress',
@@ -45,6 +47,34 @@ export default function TodoApp() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [draft, setDraft] = useState<TodoDraft>(initialDraft);
   const [error, setError] = useState('');
+  const [hasLoadedTodos, setHasLoadedTodos] = useState(false);
+
+  useEffect(() => {
+    // Loading happens after hydration so browser storage is only touched on the client.
+    const rawTodos = window.localStorage.getItem(storageKey);
+    if (!rawTodos) {
+      setHasLoadedTodos(true);
+      return;
+    }
+
+    try {
+      const parsedTodos = JSON.parse(rawTodos) as Todo[];
+      setTodos(Array.isArray(parsedTodos) ? parsedTodos : []);
+    } catch {
+      setTodos([]);
+    } finally {
+      setHasLoadedTodos(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    // The load guard prevents the empty initial render from overwriting existing saved todos.
+    if (!hasLoadedTodos) {
+      return;
+    }
+
+    window.localStorage.setItem(storageKey, JSON.stringify(todos));
+  }, [hasLoadedTodos, todos]);
 
   function handleCreateTodo(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,6 +100,15 @@ export default function TodoApp() {
     setTodos((currentTodos) => [todo, ...currentTodos]);
     setDraft(initialDraft);
     setError('');
+  }
+
+  function updateTodo(todoId: string, updates: Partial<Todo>) {
+    // Field edits are stored as partial todo updates so each control can remain small and direct.
+    setTodos((currentTodos) =>
+      currentTodos.map((todo) =>
+        todo.id === todoId ? { ...todo, ...updates } : todo,
+      ),
+    );
   }
 
   return (
@@ -160,23 +199,85 @@ export default function TodoApp() {
           ) : (
             todos.map((todo) => (
               <article className="todo-item" key={todo.id}>
-                <div>
-                  <h2>{todo.title}</h2>
-                  <p>
-                    {priorityLabels[todo.priority]} priority ·{' '}
-                    {statusLabels[todo.status]}
-                  </p>
+                <label className="todo-title-field">
+                  <span>Title</span>
+                  <input
+                    type="text"
+                    value={todo.title}
+                    onChange={(event) =>
+                      updateTodo(todo.id, { title: event.target.value })
+                    }
+                    onBlur={(event) =>
+                      updateTodo(todo.id, {
+                        title: event.target.value.trim() || todo.title,
+                      })
+                    }
+                  />
+                </label>
+
+                <div className="todo-field-grid">
+                  <label>
+                    <span>Status</span>
+                    <select
+                      value={todo.status}
+                      onChange={(event) =>
+                        updateTodo(todo.id, {
+                          status: event.target.value as TodoStatus,
+                        })
+                      }
+                    >
+                      {Object.entries(statusLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Priority</span>
+                    <select
+                      value={todo.priority}
+                      onChange={(event) =>
+                        updateTodo(todo.id, {
+                          priority: event.target.value as TodoPriority,
+                        })
+                      }
+                    >
+                      {Object.entries(priorityLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Due date</span>
+                    <input
+                      type="date"
+                      value={todo.dueDate ?? ''}
+                      onChange={(event) =>
+                        updateTodo(todo.id, {
+                          dueDate: event.target.value || undefined,
+                        })
+                      }
+                    />
+                  </label>
+
+                  <label>
+                    <span>Reminder</span>
+                    <input
+                      type="time"
+                      value={todo.reminderTime ?? ''}
+                      onChange={(event) =>
+                        updateTodo(todo.id, {
+                          reminderTime: event.target.value || undefined,
+                        })
+                      }
+                    />
+                  </label>
                 </div>
-                <dl>
-                  <div>
-                    <dt>Due</dt>
-                    <dd>{todo.dueDate || 'None'}</dd>
-                  </div>
-                  <div>
-                    <dt>Reminder</dt>
-                    <dd>{todo.reminderTime || 'None'}</dd>
-                  </div>
-                </dl>
               </article>
             ))
           )}
