@@ -205,7 +205,7 @@ button {
 
 .todo-title-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap: 14px;
   align-items: end;
 }
@@ -233,8 +233,7 @@ button {
 .todo-field-grid {
   display: grid;
   grid-template-columns:
-    minmax(110px, 0.8fr) minmax(110px, 0.8fr) minmax(145px, 1fr)
-    minmax(230px, 1.4fr) minmax(76px, max-content);
+    minmax(110px, 0.8fr) minmax(110px, 0.8fr) minmax(145px, 1fr) minmax(230px, 1.4fr) minmax(76px, max-content);
   gap: 12px;
   align-items: end;
 }

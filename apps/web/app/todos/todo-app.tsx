@@ -142,8 +142,8 @@ export default function TodoApp() {
   const [isCreatingTodo, setIsCreatingTodo] = useState(false);
   const [savingTodoIds, setSavingTodoIds] = useState<Set<string>>(new Set());
   const [titleDrafts, setTitleDrafts] = useState<Record<string, string>>({});
-  const [sortField, setSortField] = useState<SortField>('createdAt');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [sortField, setSortField] = useState<SortField>('dueDate');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     let isCurrentLoad = true;
