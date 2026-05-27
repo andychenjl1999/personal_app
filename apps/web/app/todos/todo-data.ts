@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase/client';
+import { getSupabaseClient } from '../../lib/supabase/client';
 
 export type TodoStatus = 'planned' | 'in-progress' | 'completed';
 export type TodoPriority = 'low' | 'medium' | 'high';
@@ -104,7 +104,7 @@ function buildUpdatePayload(updates: UpdateTodoInput) {
 }
 
 export async function listTodos(): Promise<Todo[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('todos')
     .select(todoColumns)
     .order('created_at', { ascending: false })
@@ -118,7 +118,7 @@ export async function listTodos(): Promise<Todo[]> {
 }
 
 export async function createTodo(input: CreateTodoInput): Promise<Todo> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('todos')
     .insert(buildCreatePayload(input))
     .select(todoColumns)
@@ -136,7 +136,7 @@ export async function updateTodo(
   todoId: string,
   updates: UpdateTodoInput,
 ): Promise<Todo> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabaseClient()
     .from('todos')
     .update(buildUpdatePayload(updates))
     .eq('id', todoId)
@@ -152,7 +152,10 @@ export async function updateTodo(
 }
 
 export async function deleteTodo(todoId: string): Promise<void> {
-  const { error } = await supabase.from('todos').delete().eq('id', todoId);
+  const { error } = await getSupabaseClient()
+    .from('todos')
+    .delete()
+    .eq('id', todoId);
 
   if (error) {
     throw new Error(error.message);
