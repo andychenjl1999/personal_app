@@ -2,7 +2,7 @@
 
 ## Summary
 
-The todo list is the first web feature for the personal app platform. The first version is web-only and stores todos in browser `localStorage` so the workflow can be validated before adding Supabase persistence.
+The todo list is the first web feature for the personal app platform. The current version is web-only and stores todos in Supabase so the workflow can persist beyond one browser.
 
 ## Todo Fields
 
@@ -12,6 +12,7 @@ The todo list is the first web feature for the personal app platform. The first 
 - `dueDate`: optional Unix timestamp in seconds. It represents 12:00am on the selected due date in the user's local timezone.
 - `reminderTime`: optional Unix timestamp in seconds. It represents the selected local date and time, specific to the minute.
 - `createdAt`: internal timestamp used for the default newest-first order.
+- `updatedAt`: internal timestamp managed by Supabase whenever a row changes.
 
 ## Web Behavior
 
@@ -40,8 +41,10 @@ Each sort can toggle between ascending and descending direction. Optional due da
 
 ## Persistence
 
-Todos are stored under the `localStorage` key `personal-app-v2.todos.v2`. This is intentionally frontend-only for the first implementation pass.
+Todos are stored in the Supabase `public.todos` table. The web app uses the browser Supabase client with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
-The `v2` storage key resets the earlier string-based date schema. Old `personal-app-v2.todos` browser data is not migrated.
+Old browser `localStorage` data is ignored and is not migrated into Supabase.
 
-Supabase persistence, cross-device sync, reminders, and Android support are future follow-up work.
+The current no-auth single-user phase uses temporary permissive anon RLS policies. These policies must be replaced with owner-scoped rules when authentication is introduced.
+
+Cross-device sync, reminders, and Android support are future follow-up work.
