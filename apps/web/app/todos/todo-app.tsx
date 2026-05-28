@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from 'react';
 
+import { getTodoDraftInput, saveTodoDraftInput } from './todo-draft-data';
 import {
   createTodo as createSupabaseTodo,
   listTodos,
@@ -104,12 +105,25 @@ function unixSecondsToDatetimeLocalInput(value?: number) {
   return `${year}-${month}-${day}T${hour}:${minute}`;
 }
 
+function formatSavedAt(value: string) {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
+
 export default function TodoApp() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [draft, setDraft] = useState<TodoDraft>(initialDraft);
+  const [draftInputContent, setDraftInputContent] = useState('');
+  const [draftInputSavedAt, setDraftInputSavedAt] = useState<string>();
   const [error, setError] = useState('');
+  const [draftInputLoadError, setDraftInputLoadError] = useState('');
+  const [draftInputSaveError, setDraftInputSaveError] = useState('');
   const [isLoadingTodos, setIsLoadingTodos] = useState(true);
+  const [isLoadingDraftInput, setIsLoadingDraftInput] = useState(true);
   const [isCreatingTodo, setIsCreatingTodo] = useState(false);
+  const [isSavingDraftInput, setIsSavingDraftInput] = useState(false);
   const [savingTodoIds, setSavingTodoIds] = useState<Set<string>>(new Set());
   const [titleDrafts, setTitleDrafts] = useState<Record<string, string>>({});
 
@@ -137,6 +151,39 @@ export default function TodoApp() {
     }
 
     loadInitialTodos();
+
+    return () => {
+      isCurrentLoad = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isCurrentLoad = true;
+
+    async function loadInitialDraftInput() {
+      // Load the scratchpad independently so draft failures do not block normal todo list work.
+      try {
+        const loadedDraftInput = await getTodoDraftInput();
+
+        if (isCurrentLoad) {
+          setDraftInputContent(loadedDraftInput?.content ?? '');
+          setDraftInputSavedAt(loadedDraftInput?.updatedAt);
+          setDraftInputLoadError('');
+        }
+      } catch (loadError) {
+        if (isCurrentLoad) {
+          setDraftInputLoadError(
+            getErrorMessage(loadError, 'Unable to load draft todos.'),
+          );
+        }
+      } finally {
+        if (isCurrentLoad) {
+          setIsLoadingDraftInput(false);
+        }
+      }
+    }
+
+    loadInitialDraftInput();
 
     return () => {
       isCurrentLoad = false;
@@ -171,6 +218,24 @@ export default function TodoApp() {
       setError(getErrorMessage(createError, 'Unable to create todo.'));
     } finally {
       setIsCreatingTodo(false);
+    }
+  }
+
+  async function handleSaveDraftInput() {
+    setIsSavingDraftInput(true);
+    setDraftInputSaveError('');
+
+    try {
+      // Save the textarea exactly as typed; parsing into structured todos is a later workflow.
+      const savedDraftInput = await saveTodoDraftInput(draftInputContent);
+      setDraftInputContent(savedDraftInput.content);
+      setDraftInputSavedAt(savedDraftInput.updatedAt);
+    } catch (saveError) {
+      setDraftInputSaveError(
+        getErrorMessage(saveError, 'Unable to save draft todos.'),
+      );
+    } finally {
+      setIsSavingDraftInput(false);
     }
   }
 
@@ -237,6 +302,8 @@ export default function TodoApp() {
 
   const sortedTodos = [...todos].sort(compareTodos);
   const isFormDisabled = isCreatingTodo || isLoadingTodos;
+  const isDraftInputDisabled =
+    isLoadingDraftInput || isSavingDraftInput || Boolean(draftInputLoadError);
 
   return (
     <main className="todo-shell">
@@ -252,79 +319,122 @@ export default function TodoApp() {
       </section>
 
       <section className="todo-workspace" aria-label="Todo workspace">
-        <form className="todo-form" onSubmit={handleCreateTodo}>
-          <label>
-            <span>Title</span>
-            <input
-              type="text"
-              value={draft.title}
-              disabled={isFormDisabled}
-              onChange={(event) =>
-                setDraft((currentDraft) => ({
-                  ...currentDraft,
-                  title: event.target.value,
-                }))
-              }
-              placeholder="Plan the next app feature"
-            />
-          </label>
+        <div className="todo-input-column">
+          <form className="todo-form" onSubmit={handleCreateTodo}>
+            <label>
+              <span>Title</span>
+              <input
+                type="text"
+                value={draft.title}
+                disabled={isFormDisabled}
+                onChange={(event) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    title: event.target.value,
+                  }))
+                }
+                placeholder="Plan the next app feature"
+              />
+            </label>
 
-          <label>
-            <span>Priority</span>
-            <select
-              value={draft.priority}
-              disabled={isFormDisabled}
-              onChange={(event) =>
-                setDraft((currentDraft) => ({
-                  ...currentDraft,
-                  priority: event.target.value as TodoPriority,
-                }))
-              }
+            <label>
+              <span>Priority</span>
+              <select
+                value={draft.priority}
+                disabled={isFormDisabled}
+                onChange={(event) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    priority: event.target.value as TodoPriority,
+                  }))
+                }
+              >
+                {Object.entries(priorityLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Due date</span>
+              <input
+                type="date"
+                value={draft.dueDate}
+                disabled={isFormDisabled}
+                onChange={(event) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    dueDate: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            <label>
+              <span>Reminder</span>
+              <input
+                type="datetime-local"
+                value={draft.reminderTime}
+                disabled={isFormDisabled}
+                onChange={(event) =>
+                  setDraft((currentDraft) => ({
+                    ...currentDraft,
+                    reminderTime: event.target.value,
+                  }))
+                }
+              />
+            </label>
+
+            {error ? <p className="form-error">{error}</p> : null}
+
+            <button type="submit" disabled={isFormDisabled}>
+              {isCreatingTodo ? 'Creating...' : 'Create todo'}
+            </button>
+          </form>
+
+          <section className="todo-draft-panel" aria-labelledby="draft-heading">
+            <div className="todo-draft-header">
+              <h2 id="draft-heading">Draft todos</h2>
+              {draftInputSavedAt ? (
+                <p>Saved {formatSavedAt(draftInputSavedAt)}</p>
+              ) : null}
+            </div>
+
+            <label>
+              <span>Scratchpad</span>
+              <textarea
+                value={draftInputContent}
+                disabled={isDraftInputDisabled}
+                onChange={(event) => {
+                  setDraftInputContent(event.target.value);
+                  setDraftInputSaveError('');
+                }}
+                placeholder="Paste rough todo ideas here, one per line if useful."
+                rows={9}
+              />
+            </label>
+
+            {isLoadingDraftInput ? (
+              <p className="draft-status">Loading draft todos...</p>
+            ) : null}
+            {draftInputLoadError ? (
+              <p className="form-error">{draftInputLoadError}</p>
+            ) : null}
+            {draftInputSaveError ? (
+              <p className="form-error">{draftInputSaveError}</p>
+            ) : null}
+
+            <button
+              type="button"
+              disabled={isDraftInputDisabled}
+              onClick={() => void handleSaveDraftInput()}
             >
-              {Object.entries(priorityLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span>Due date</span>
-            <input
-              type="date"
-              value={draft.dueDate}
-              disabled={isFormDisabled}
-              onChange={(event) =>
-                setDraft((currentDraft) => ({
-                  ...currentDraft,
-                  dueDate: event.target.value,
-                }))
-              }
-            />
-          </label>
-
-          <label>
-            <span>Reminder</span>
-            <input
-              type="datetime-local"
-              value={draft.reminderTime}
-              disabled={isFormDisabled}
-              onChange={(event) =>
-                setDraft((currentDraft) => ({
-                  ...currentDraft,
-                  reminderTime: event.target.value,
-                }))
-              }
-            />
-          </label>
-
-          {error ? <p className="form-error">{error}</p> : null}
-
-          <button type="submit" disabled={isFormDisabled}>
-            {isCreatingTodo ? 'Creating...' : 'Create todo'}
-          </button>
-        </form>
+              {isSavingDraftInput ? 'Saving...' : 'Save draft'}
+            </button>
+          </section>
+        </div>
 
         <div className="todo-list" aria-live="polite">
           {isLoadingTodos ? (
