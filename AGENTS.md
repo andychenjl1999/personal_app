@@ -9,7 +9,7 @@ The current stack is established in the repo. Do not invent additional framework
 ## Core Principles
 
 - Keep changes small, focused, and easy to review.
-- Make changes in small, logically coherent chunks; commit and push each chunk separately.
+- Make changes in small, logically coherent chunks; commit and push each coherent change separately.
 - Prefer clear, maintainable solutions over clever ones.
 - Extend existing conventions once they exist; do not replace them casually.
 - Treat documentation as part of the work, not optional cleanup.
@@ -74,9 +74,9 @@ The current stack is established in the repo. Do not invent additional framework
 - If the repo does not yet define a standard, choose the simplest reasonable default and document it when it becomes important.
 - Make documentation updates part of task completion when the task changes behavior, structure, or decisions.
 - Flag gaps or ambiguities instead of silently inventing policy where the project has not decided yet.
-- Add meaningful comments for each non-trivial code logic block, especially validation, branching rules, data transformations, persistence, sorting, and side effects.
-- Add comments for each logically coherent non-trivial code chunk explaining what it does and why.
+- Add meaningful comments for each logically coherent non-trivial code chunk explaining what the code is doing and why, especially validation, branching rules, data transformations, persistence, sorting, and side effects.
 - Comments should explain intent and constraints; do not add comments that merely restate obvious syntax.
+- When operating in Plan Mode, if an important detail is uncertain and cannot be resolved from repository inspection, always ask the user before finalizing the plan.
 
 ## Future Evolution
 
