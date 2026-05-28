@@ -24,6 +24,13 @@ The todo list is the first web feature for the personal app platform. The curren
 - Completing a todo sets its status to `completed`.
 - A completed todo checkbox cannot be unchecked in this first version.
 - Status can otherwise move between `planned` and `in progress`.
+- Status and priority selectors, including their dropdown options, use value-specific colors:
+  - status `planned`: blue `#2563EB`
+  - status `in-progress`: amber `#D97706`
+  - status `completed`: green `#16A34A`
+  - priority `low`: gray `#6B7280`
+  - priority `medium`: amber `#D97706`
+  - priority `high`: red `#DC2626`
 
 ## Sorting
 

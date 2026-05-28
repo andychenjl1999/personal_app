@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { CSSProperties, FormEvent, useEffect, useState } from 'react';
 
 import { getTodoDraftInput, saveTodoDraftInput } from './todo-draft-data';
 import {
@@ -38,6 +38,61 @@ const priorityLabels: Record<TodoPriority, string> = {
   medium: 'Medium',
   high: 'High',
 };
+
+type FieldTone = {
+  color: string;
+  background: string;
+};
+
+type FieldToneStyle = CSSProperties & {
+  '--field-color': string;
+  '--field-bg': string;
+};
+
+const statusTones: Record<TodoStatus, FieldTone> = {
+  planned: {
+    color: '#2563EB',
+    background: '#EFF6FF',
+  },
+  'in-progress': {
+    color: '#D97706',
+    background: '#FFFBEB',
+  },
+  completed: {
+    color: '#16A34A',
+    background: '#F0FDF4',
+  },
+};
+
+const priorityTones: Record<TodoPriority, FieldTone> = {
+  low: {
+    color: '#6B7280',
+    background: '#F3F4F6',
+  },
+  medium: {
+    color: '#D97706',
+    background: '#FFFBEB',
+  },
+  high: {
+    color: '#DC2626',
+    background: '#FEF2F2',
+  },
+};
+
+function getFieldToneStyle(tone: FieldTone): FieldToneStyle {
+  return {
+    '--field-color': tone.color,
+    '--field-bg': tone.background,
+  };
+}
+
+function getOptionToneStyle(tone: FieldTone): CSSProperties {
+  return {
+    backgroundColor: tone.background,
+    color: tone.color,
+    fontWeight: 700,
+  };
+}
 
 function unixSecondsToDate(unixSeconds: number) {
   return new Date(unixSeconds * 1000);
@@ -340,6 +395,8 @@ export default function TodoApp() {
             <label>
               <span>Priority</span>
               <select
+                className="tone-select"
+                style={getFieldToneStyle(priorityTones[draft.priority])}
                 value={draft.priority}
                 disabled={isFormDisabled}
                 onChange={(event) =>
@@ -350,7 +407,13 @@ export default function TodoApp() {
                 }
               >
                 {Object.entries(priorityLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
+                  <option
+                    key={value}
+                    value={value}
+                    style={getOptionToneStyle(
+                      priorityTones[value as TodoPriority],
+                    )}
+                  >
                     {label}
                   </option>
                 ))}
@@ -498,6 +561,8 @@ export default function TodoApp() {
                     <label>
                       <span>Status</span>
                       <select
+                        className="tone-select"
+                        style={getFieldToneStyle(statusTones[todo.status])}
                         value={todo.status}
                         disabled={todo.status === 'completed' || isSavingTodo}
                         onChange={(event) =>
@@ -506,10 +571,25 @@ export default function TodoApp() {
                           })
                         }
                       >
-                        <option value="planned">Planned</option>
-                        <option value="in-progress">In progress</option>
+                        <option
+                          value="planned"
+                          style={getOptionToneStyle(statusTones.planned)}
+                        >
+                          Planned
+                        </option>
+                        <option
+                          value="in-progress"
+                          style={getOptionToneStyle(statusTones['in-progress'])}
+                        >
+                          In progress
+                        </option>
                         {todo.status === 'completed' ? (
-                          <option value="completed">Completed</option>
+                          <option
+                            value="completed"
+                            style={getOptionToneStyle(statusTones.completed)}
+                          >
+                            Completed
+                          </option>
                         ) : null}
                       </select>
                     </label>
@@ -517,6 +597,8 @@ export default function TodoApp() {
                     <label>
                       <span>Priority</span>
                       <select
+                        className="tone-select"
+                        style={getFieldToneStyle(priorityTones[todo.priority])}
                         value={todo.priority}
                         disabled={isSavingTodo}
                         onChange={(event) =>
@@ -527,7 +609,13 @@ export default function TodoApp() {
                       >
                         {Object.entries(priorityLabels).map(
                           ([value, label]) => (
-                            <option key={value} value={value}>
+                            <option
+                              key={value}
+                              value={value}
+                              style={getOptionToneStyle(
+                                priorityTones[value as TodoPriority],
+                              )}
+                            >
                               {label}
                             </option>
                           ),

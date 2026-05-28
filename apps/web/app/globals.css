@@ -140,6 +140,19 @@ button {
   padding: 9px 11px;
 }
 
+.todo-form select.tone-select,
+.todo-field-grid select.tone-select {
+  border-color: var(--field-color);
+  background: var(--field-bg);
+  color: var(--field-color);
+  font-weight: 700;
+}
+
+.todo-form select.tone-select:disabled,
+.todo-field-grid select.tone-select:disabled {
+  opacity: 0.72;
+}
+
 .todo-draft-panel textarea {
   min-height: 210px;
   line-height: 1.45;
