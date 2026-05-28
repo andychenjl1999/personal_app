@@ -19,15 +19,6 @@ type TodoDraft = {
   reminderTime: string;
 };
 
-type SortField =
-  | 'createdAt'
-  | 'name'
-  | 'priority'
-  | 'dueDate'
-  | 'reminderTime'
-  | 'status';
-type SortDirection = 'asc' | 'desc';
-
 const initialDraft: TodoDraft = {
   title: '',
   priority: 'medium',
@@ -45,27 +36,6 @@ const priorityLabels: Record<TodoPriority, string> = {
   low: 'Low',
   medium: 'Medium',
   high: 'High',
-};
-
-const priorityRank: Record<TodoPriority, number> = {
-  low: 1,
-  medium: 2,
-  high: 3,
-};
-
-const statusRank: Record<TodoStatus, number> = {
-  planned: 1,
-  'in-progress': 2,
-  completed: 3,
-};
-
-const sortLabels: Record<SortField, string> = {
-  createdAt: 'Created',
-  name: 'Name',
-  priority: 'Priority',
-  dueDate: 'Due date',
-  reminderTime: 'Reminder time',
-  status: 'Status',
 };
 
 function unixSecondsToDate(unixSeconds: number) {
@@ -142,8 +112,6 @@ export default function TodoApp() {
   const [isCreatingTodo, setIsCreatingTodo] = useState(false);
   const [savingTodoIds, setSavingTodoIds] = useState<Set<string>>(new Set());
   const [titleDrafts, setTitleDrafts] = useState<Record<string, string>>({});
-  const [sortField, setSortField] = useState<SortField>('dueDate');
-  const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
   useEffect(() => {
     let isCurrentLoad = true;
@@ -252,53 +220,19 @@ export default function TodoApp() {
     void persistTodoUpdate(todoId, { status: 'completed' });
   }
 
-  function compareOptionalTimestamps(left?: number, right?: number) {
-    // Blank due dates and reminder times sort after populated values in ascending order; direction reversal handles descending.
-    if (left === undefined && right === undefined) {
-      return 0;
-    }
-
-    if (left === undefined) {
-      return 1;
-    }
-
-    if (right === undefined) {
-      return -1;
-    }
-
-    return left - right;
-  }
-
   function compareTodos(left: Todo, right: Todo) {
-    // Each sort field maps to the same ordered comparison contract before the selected direction is applied.
-    const directionMultiplier = sortDirection === 'asc' ? 1 : -1;
-    let result = 0;
+    const leftGroup = getTodoSortGroup(left);
+    const rightGroup = getTodoSortGroup(right);
 
-    if (sortField === 'name') {
-      result = left.title.localeCompare(right.title);
+    if (leftGroup !== rightGroup) {
+      return leftGroup - rightGroup;
     }
 
-    if (sortField === 'priority') {
-      result = priorityRank[left.priority] - priorityRank[right.priority];
+    if (leftGroup === 1) {
+      return (left.dueDate ?? 0) - (right.dueDate ?? 0);
     }
 
-    if (sortField === 'dueDate') {
-      result = compareOptionalTimestamps(left.dueDate, right.dueDate);
-    }
-
-    if (sortField === 'reminderTime') {
-      result = compareOptionalTimestamps(left.reminderTime, right.reminderTime);
-    }
-
-    if (sortField === 'status') {
-      result = statusRank[left.status] - statusRank[right.status];
-    }
-
-    if (sortField === 'createdAt') {
-      result = left.createdAt.localeCompare(right.createdAt);
-    }
-
-    return result * directionMultiplier;
+    return right.updatedAt.localeCompare(left.updatedAt);
   }
 
   const sortedTodos = [...todos].sort(compareTodos);
@@ -393,34 +327,6 @@ export default function TodoApp() {
         </form>
 
         <div className="todo-list" aria-live="polite">
-          <div className="list-toolbar">
-            <label>
-              <span>Sort by</span>
-              <select
-                value={sortField}
-                onChange={(event) =>
-                  setSortField(event.target.value as SortField)
-                }
-              >
-                {Object.entries(sortLabels).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              type="button"
-              onClick={() =>
-                setSortDirection((currentDirection) =>
-                  currentDirection === 'asc' ? 'desc' : 'asc',
-                )
-              }
-            >
-              {sortDirection === 'asc' ? 'Ascending' : 'Descending'}
-            </button>
-          </div>
-
           {isLoadingTodos ? (
             <p className="empty-state">Loading todos...</p>
           ) : todos.length === 0 ? (
@@ -571,6 +477,19 @@ export default function TodoApp() {
       </section>
     </main>
   );
+}
+
+function getTodoSortGroup(todo: Todo) {
+  // The list prioritizes active dated work, then active undated work, then completed history.
+  if (todo.status === 'completed') {
+    return 3;
+  }
+
+  if (todo.dueDate !== undefined) {
+    return 1;
+  }
+
+  return 2;
 }
 
 function getErrorMessage(error: unknown, fallback: string) {

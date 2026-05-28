@@ -102,7 +102,6 @@ button {
 }
 
 .todo-form label,
-.list-toolbar label,
 .todo-title-field,
 .todo-field-grid label {
   display: grid;
@@ -110,7 +109,6 @@ button {
 }
 
 .todo-form span,
-.list-toolbar span,
 .todo-title-field span,
 .todo-field-grid span {
   color: var(--muted);
@@ -120,7 +118,6 @@ button {
 
 .todo-form input,
 .todo-form select,
-.list-toolbar select,
 .todo-title-field input,
 .todo-field-grid input,
 .todo-field-grid select {
@@ -135,7 +132,6 @@ button {
 
 .todo-form input:focus,
 .todo-form select:focus,
-.list-toolbar select:focus,
 .todo-title-field input:focus,
 .todo-field-grid input:focus,
 .todo-field-grid select:focus {
@@ -164,31 +160,6 @@ button {
 .todo-list {
   display: grid;
   gap: 12px;
-}
-
-.list-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: end;
-  justify-content: space-between;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 14px;
-}
-
-.list-toolbar label {
-  min-width: 220px;
-}
-
-.list-toolbar button {
-  min-height: 42px;
-  border-radius: 7px;
-  background: var(--surface-muted);
-  color: var(--text);
-  font-weight: 700;
-  padding: 0 14px;
 }
 
 .empty-state {
@@ -233,7 +204,8 @@ button {
 .todo-field-grid {
   display: grid;
   grid-template-columns:
-    minmax(110px, 0.8fr) minmax(110px, 0.8fr) minmax(145px, 1fr) minmax(230px, 1.4fr) minmax(76px, max-content);
+    minmax(110px, 0.8fr) minmax(110px, 0.8fr) minmax(145px, 1fr)
+    minmax(230px, 1.4fr) minmax(76px, max-content);
   gap: 12px;
   align-items: end;
 }

@@ -41,10 +41,16 @@ Each sort can toggle between ascending and descending direction. Optional due da
 
 ## Persistence
 
-Todos are stored in the Supabase `public.todos` table. The web app uses the browser Supabase client with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+Todos are stored in the Supabase `public.todos` table. The web app uses the browser Supabase client with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 
 Old browser `localStorage` data is ignored and is not migrated into Supabase.
 
 The current no-auth single-user phase uses temporary permissive anon RLS policies. These policies must be replaced with owner-scoped rules when authentication is introduced.
 
-Cross-device sync, reminders, and Android support are future follow-up work.
+## Automated Due Date Rollover
+
+Supabase Cron runs a database function once per day at 5:00am in the `America/Los_Angeles` timezone. If an incomplete todo has a populated due date before the current Pacific calendar day, the job updates `dueDate` to today's local-midnight Unix timestamp.
+
+Completed todos and todos without due dates are left unchanged. A run-log table records each Pacific date so duplicate invocations on the same day do not repeat the rollover.
+
+Cross-device sync, reminders, per-user timezones, and Android support are future follow-up work.
