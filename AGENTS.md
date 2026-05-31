@@ -74,7 +74,9 @@ The current stack is established in the repo. Do not invent additional framework
 - If the repo does not yet define a standard, choose the simplest reasonable default and document it when it becomes important.
 - Make documentation updates part of task completion when the task changes behavior, structure, or decisions.
 - Flag gaps or ambiguities instead of silently inventing policy where the project has not decided yet.
-- Add meaningful comments for each logically coherent non-trivial code chunk explaining what the code is doing and why, especially validation, branching rules, data transformations, persistence, sorting, and side effects.
+- Implementation plans must be specific about the exact files, functions, components, commands, migrations, and docs expected to be touched whenever that can be known from repository inspection.
+- If a plan cannot identify an exact file, function, or interface yet, call out that unknown explicitly instead of hiding it behind vague phrases like "update the relevant code."
+- Add meaningful comments generously for better code readability, especially around logically coherent non-trivial code chunks involving validation, branching rules, data transformations, persistence, sorting, side effects, and cross-file assumptions.
 - Comments should explain intent and constraints; do not add comments that merely restate obvious syntax.
 - When operating in Plan Mode, if an important detail is uncertain and cannot be resolved from repository inspection, always ask the user before finalizing the plan.
 

@@ -7,6 +7,7 @@ The todo list is the first web feature for the personal app platform. The curren
 ## Todo Fields
 
 - `title`: required non-empty text.
+- `progressNote`: optional text for the todo's current progress. It defaults to an empty string and can be cleared.
 - `status`: required after creation. New todos are always created as `planned`.
 - `priority`: required, one of `low`, `medium`, or `high`.
 - `dueDate`: optional Unix timestamp in seconds. It represents 12:00am on the selected due date in the user's local timezone.
@@ -17,7 +18,9 @@ The todo list is the first web feature for the personal app platform. The curren
 ## Web Behavior
 
 - Users can create todos from the main web interface.
+- Creating a todo does not ask for a progress note; new todos start with an empty note.
 - Users can update todo fields inline in the list.
+- Users can update the progress note inline with a multi-line text area on each todo item.
 - Users select due dates with a date input.
 - Users select reminders with a date-and-time input.
 - Users can mark a todo complete with a checkbox.

@@ -6,6 +6,7 @@ export type TodoPriority = 'low' | 'medium' | 'high';
 export type Todo = {
   id: string;
   title: string;
+  progressNote: string;
   status: TodoStatus;
   priority: TodoPriority;
   dueDate?: number;
@@ -22,12 +23,21 @@ export type CreateTodoInput = {
 };
 
 export type UpdateTodoInput = Partial<
-  Pick<Todo, 'title' | 'status' | 'priority' | 'dueDate' | 'reminderTime'>
+  Pick<
+    Todo,
+    | 'title'
+    | 'progressNote'
+    | 'status'
+    | 'priority'
+    | 'dueDate'
+    | 'reminderTime'
+  >
 >;
 
 type TodoRow = {
   id: string;
   title: string;
+  progress_note: string;
   status: TodoStatus;
   priority: TodoPriority;
   due_date: number | null;
@@ -37,13 +47,14 @@ type TodoRow = {
 };
 
 const todoColumns =
-  'id,title,status,priority,due_date,reminder_time,created_at,updated_at';
+  'id,title,progress_note,status,priority,due_date,reminder_time,created_at,updated_at';
 
 function mapTodoRow(row: TodoRow): Todo {
   // Supabase returns snake_case columns; the UI keeps camelCase names so React state stays idiomatic.
   return {
     id: row.id,
     title: row.title,
+    progressNote: row.progress_note,
     status: row.status,
     priority: row.priority,
     dueDate: row.due_date ?? undefined,
@@ -71,7 +82,15 @@ function buildCreatePayload(input: CreateTodoInput) {
 
 function buildUpdatePayload(updates: UpdateTodoInput) {
   const payload: Partial<
-    Pick<TodoRow, 'title' | 'status' | 'priority' | 'due_date' | 'reminder_time'>
+    Pick<
+      TodoRow,
+      | 'title'
+      | 'progress_note'
+      | 'status'
+      | 'priority'
+      | 'due_date'
+      | 'reminder_time'
+    >
   > = {};
 
   // Only properties explicitly present are sent, which lets blank date controls clear nullable columns.
@@ -82,6 +101,10 @@ function buildUpdatePayload(updates: UpdateTodoInput) {
     }
 
     payload.title = title;
+  }
+
+  if ('progressNote' in updates) {
+    payload.progress_note = updates.progressNote ?? '';
   }
 
   if ('status' in updates) {
@@ -107,7 +130,7 @@ export async function listTodos(): Promise<Todo[]> {
   const { data, error } = await getSupabaseClient()
     .from('todos')
     .select(todoColumns)
-    .order('created_at', { ascending: false })
+    .neq('status', 'completed')
     .returns<TodoRow[]>();
 
   if (error) {

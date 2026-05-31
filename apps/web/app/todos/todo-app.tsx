@@ -167,6 +167,15 @@ function formatSavedAt(value: string) {
   }).format(new Date(value));
 }
 
+function fitTextareaToContent(textarea: HTMLTextAreaElement | null) {
+  if (!textarea) {
+    return;
+  }
+
+  textarea.style.height = 'auto';
+  textarea.style.height = `${textarea.scrollHeight}px`;
+}
+
 export default function TodoApp() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [draft, setDraft] = useState<TodoDraft>(initialDraft);
@@ -181,6 +190,9 @@ export default function TodoApp() {
   const [isSavingDraftInput, setIsSavingDraftInput] = useState(false);
   const [savingTodoIds, setSavingTodoIds] = useState<Set<string>>(new Set());
   const [titleDrafts, setTitleDrafts] = useState<Record<string, string>>({});
+  const [progressNoteDrafts, setProgressNoteDrafts] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     let isCurrentLoad = true;
@@ -508,6 +520,8 @@ export default function TodoApp() {
             sortedTodos.map((todo) => {
               const isSavingTodo = savingTodoIds.has(todo.id);
               const titleValue = titleDrafts[todo.id] ?? todo.title;
+              const progressNoteValue =
+                progressNoteDrafts[todo.id] ?? todo.progressNote;
 
               return (
                 <article className="todo-item" key={todo.id}>
@@ -556,6 +570,43 @@ export default function TodoApp() {
                       />
                     </label>
                   </div>
+
+                  <label className="todo-progress-note">
+                    <span>Progress note</span>
+                    <textarea
+                      ref={fitTextareaToContent}
+                      value={progressNoteValue}
+                      disabled={isSavingTodo}
+                      onChange={(event) => {
+                        setProgressNoteDrafts((currentDrafts) => ({
+                          ...currentDrafts,
+                          [todo.id]: event.target.value,
+                        }));
+                        fitTextareaToContent(event.currentTarget);
+                      }}
+                      onBlur={async (event) => {
+                        const progressNote = event.target.value;
+
+                        if (progressNote === todo.progressNote) {
+                          setProgressNoteDrafts((currentDrafts) => {
+                            const nextDrafts = { ...currentDrafts };
+                            delete nextDrafts[todo.id];
+                            return nextDrafts;
+                          });
+                          setError('');
+                          return;
+                        }
+
+                        await persistTodoUpdate(todo.id, { progressNote });
+                        setProgressNoteDrafts((currentDrafts) => {
+                          const nextDrafts = { ...currentDrafts };
+                          delete nextDrafts[todo.id];
+                          return nextDrafts;
+                        });
+                      }}
+                      rows={1}
+                    />
+                  </label>
 
                   <div className="todo-field-grid">
                     <label>

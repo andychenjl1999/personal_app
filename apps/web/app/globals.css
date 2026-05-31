@@ -111,6 +111,7 @@ button {
 .todo-form label,
 .todo-draft-panel label,
 .todo-title-field,
+.todo-progress-note,
 .todo-field-grid label {
   display: grid;
   gap: 7px;
@@ -119,6 +120,7 @@ button {
 .todo-form span,
 .todo-draft-panel span,
 .todo-title-field span,
+.todo-progress-note span,
 .todo-field-grid span {
   color: var(--muted);
   font-size: 0.82rem;
@@ -129,6 +131,7 @@ button {
 .todo-form select,
 .todo-draft-panel textarea,
 .todo-title-field input,
+.todo-progress-note textarea,
 .todo-field-grid input,
 .todo-field-grid select {
   width: 100%;
@@ -159,10 +162,18 @@ button {
   resize: vertical;
 }
 
+.todo-progress-note textarea {
+  min-height: 42px;
+  line-height: 1.45;
+  overflow: hidden;
+  resize: vertical;
+}
+
 .todo-form input:focus,
 .todo-form select:focus,
 .todo-draft-panel textarea:focus,
 .todo-title-field input:focus,
+.todo-progress-note textarea:focus,
 .todo-field-grid input:focus,
 .todo-field-grid select:focus {
   outline: 3px solid var(--focus);
