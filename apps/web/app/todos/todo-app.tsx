@@ -379,10 +379,6 @@ export default function TodoApp() {
           <p className="eyebrow">Personal App v2</p>
           <h1>Todo list</h1>
         </div>
-        <p>
-          Capture personal tasks, keep the workflow simple, and use this first
-          feature to prove the web app experience before backend sync.
-        </p>
       </section>
 
       <section className="todo-workspace" aria-label="Todo workspace">
