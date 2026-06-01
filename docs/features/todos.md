@@ -56,7 +56,7 @@ Todos are stored in the Supabase `public.todos` table. The web app uses the brow
 
 Old browser `localStorage` data is ignored and is not migrated into Supabase.
 
-The current no-auth single-user phase uses temporary permissive anon RLS policies. These policies must be replaced with owner-scoped rules when authentication is introduced.
+Todos require Supabase Auth. The first authenticated Google account to claim the app owns existing todo rows, and owner-scoped RLS limits todo reads and writes to rows where `owner_user_id = auth.uid()`.
 
 ## Automated Due Date Rollover
 

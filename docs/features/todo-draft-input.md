@@ -16,7 +16,7 @@ The `public.todo_draft_input` table is a singleton table constrained to `id = 1`
 
 The web app uses `getTodoDraftInput` and `saveTodoDraftInput` helpers against Supabase. Saving uses an upsert so the first edit creates the singleton row and later edits update the same row.
 
-The current no-auth single-user phase uses temporary permissive anon RLS policies. These policies must be replaced with owner-scoped rules when authentication is introduced.
+The draft input requires Supabase Auth. The first authenticated Google account to claim the app owns the singleton draft row, and owner-scoped RLS limits draft reads and writes to that account.
 
 ## Web Behavior
 

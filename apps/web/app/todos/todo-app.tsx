@@ -20,6 +20,12 @@ type TodoDraft = {
   reminderTime: string;
 };
 
+type TodoAppProps = {
+  isSigningOut: boolean;
+  onSignOut: () => void;
+  userEmail?: string;
+};
+
 const initialDraft: TodoDraft = {
   title: '',
   priority: 'medium',
@@ -176,7 +182,11 @@ function fitTextareaToContent(textarea: HTMLTextAreaElement | null) {
   textarea.style.height = `${textarea.scrollHeight}px`;
 }
 
-export default function TodoApp() {
+export default function TodoApp({
+  isSigningOut,
+  onSignOut,
+  userEmail,
+}: TodoAppProps) {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [draft, setDraft] = useState<TodoDraft>(initialDraft);
   const [draftInputContent, setDraftInputContent] = useState('');
@@ -384,6 +394,12 @@ export default function TodoApp() {
         <div>
           <p className="eyebrow">Personal App v2</p>
           <h1>Todo list</h1>
+        </div>
+        <div className="todo-account">
+          <p>{userEmail ?? 'Signed in'}</p>
+          <button type="button" disabled={isSigningOut} onClick={onSignOut}>
+            {isSigningOut ? 'Signing out...' : 'Sign out'}
+          </button>
         </div>
       </section>
 

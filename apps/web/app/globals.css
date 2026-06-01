@@ -43,6 +43,65 @@ button {
   cursor: pointer;
 }
 
+.auth-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 32px;
+}
+
+.auth-panel {
+  display: grid;
+  width: min(100%, 420px);
+  gap: 16px;
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.auth-panel h1 {
+  margin: 0;
+  font-size: 2.2rem;
+  line-height: 1.1;
+}
+
+.auth-copy,
+.auth-status {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.auth-button,
+.secondary-button {
+  min-height: 44px;
+  border-radius: 7px;
+  font-weight: 700;
+}
+
+.auth-button {
+  background: var(--accent);
+  color: white;
+}
+
+.auth-button:hover {
+  background: var(--accent-strong);
+}
+
+.secondary-button {
+  background: var(--surface-muted);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.auth-button:disabled,
+.secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
+}
+
 .todo-shell {
   min-height: 100vh;
   padding: 32px;
@@ -72,10 +131,46 @@ button {
   line-height: 1.05;
 }
 
-.todo-header p:last-child {
+.todo-header > p {
   margin: 0;
   color: var(--muted);
   line-height: 1.6;
+}
+
+.todo-account {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: end;
+  min-width: 0;
+}
+
+.todo-account p {
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.todo-account button {
+  min-height: 40px;
+  flex: 0 0 auto;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.todo-account button:hover {
+  background: var(--surface-muted);
+}
+
+.todo-account button:disabled {
+  cursor: not-allowed;
+  opacity: 0.68;
 }
 
 .todo-workspace {
@@ -311,6 +406,12 @@ button {
   .todo-title-row,
   .todo-field-grid {
     grid-template-columns: 1fr;
+  }
+
+  .todo-account {
+    align-items: start;
+    justify-content: start;
+    flex-direction: column;
   }
 
   .complete-control {
