@@ -82,6 +82,7 @@ The current stack is established in the repo. Do not invent additional framework
 - Make documentation updates part of task completion when the task changes behavior, structure, or decisions.
 - Flag gaps or ambiguities instead of silently inventing policy where the project has not decided yet.
 - Implementation plans must be specific about the exact files, functions, components, commands, migrations, and docs expected to be touched whenever that can be known from repository inspection.
+- Implementation plans must include a **Manual Followup Work** section whenever a feature requires setup outside the codebase, such as environment variables, API keys, Supabase/Vercel/GitHub dashboard settings, provider configuration, DNS/domain setup, secrets rotation, deployment toggles, cron/dashboard wiring, or manual verification steps. If no manual followup work is needed, say so explicitly.
 - If a plan cannot identify an exact file, function, or interface yet, call out that unknown explicitly instead of hiding it behind vague phrases like "update the relevant code."
 - Add meaningful comments generously for better code readability, especially around logically coherent non-trivial code chunks involving validation, branching rules, data transformations, persistence, sorting, side effects, and cross-file assumptions.
 - Comments should explain intent and constraints; do not add comments that merely restate obvious syntax.
