@@ -22,6 +22,7 @@ The todo list is the first web feature for the personal app platform. The curren
 - Users can update todo fields inline in the list.
 - Users can update the progress note inline with a multi-line text area on each todo item.
 - Users select due dates with a date input.
+- Existing todo due date edits are drafted locally while the date field is active and saved when the field loses focus.
 - Users select reminders with a date-and-time input.
 - Users can mark a todo complete with a checkbox.
 - Completing a todo sets its status to `completed`.

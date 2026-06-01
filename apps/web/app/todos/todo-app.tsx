@@ -193,6 +193,9 @@ export default function TodoApp() {
   const [progressNoteDrafts, setProgressNoteDrafts] = useState<
     Record<string, string>
   >({});
+  const [dueDateDrafts, setDueDateDrafts] = useState<Record<string, string>>(
+    {},
+  );
 
   useEffect(() => {
     let isCurrentLoad = true;
@@ -518,6 +521,8 @@ export default function TodoApp() {
               const titleValue = titleDrafts[todo.id] ?? todo.title;
               const progressNoteValue =
                 progressNoteDrafts[todo.id] ?? todo.progressNote;
+              const dueDateValue =
+                dueDateDrafts[todo.id] ?? unixSecondsToDateInput(todo.dueDate);
 
               return (
                 <article className="todo-item" key={todo.id}>
@@ -674,15 +679,41 @@ export default function TodoApp() {
                       <span>Due date</span>
                       <input
                         type="date"
-                        value={unixSecondsToDateInput(todo.dueDate)}
+                        value={dueDateValue}
                         disabled={isSavingTodo}
-                        onChange={(event) =>
-                          void persistTodoUpdate(todo.id, {
-                            dueDate: dateInputToLocalMidnightUnixSeconds(
-                              event.target.value,
-                            ),
-                          })
-                        }
+                        onChange={(event) => {
+                          // Native date pickers can emit changes while navigating months; persist only after the user leaves the field.
+                          setDueDateDrafts((currentDrafts) => ({
+                            ...currentDrafts,
+                            [todo.id]: event.target.value,
+                          }));
+                        }}
+                        onBlur={async (event) => {
+                          const dueDate = event.target.value;
+                          const currentDueDate = unixSecondsToDateInput(
+                            todo.dueDate,
+                          );
+
+                          if (dueDate === currentDueDate) {
+                            setDueDateDrafts((currentDrafts) => {
+                              const nextDrafts = { ...currentDrafts };
+                              delete nextDrafts[todo.id];
+                              return nextDrafts;
+                            });
+                            setError('');
+                            return;
+                          }
+
+                          await persistTodoUpdate(todo.id, {
+                            dueDate:
+                              dateInputToLocalMidnightUnixSeconds(dueDate),
+                          });
+                          setDueDateDrafts((currentDrafts) => {
+                            const nextDrafts = { ...currentDrafts };
+                            delete nextDrafts[todo.id];
+                            return nextDrafts;
+                          });
+                        }}
                       />
                     </label>
 
