@@ -53,6 +53,13 @@ The current stack is established in the repo. Do not invent additional framework
 - Store production secrets in GitHub or hosting-provider secret managers, never in committed files.
 - When CI is added, wire required status checks into branch protection and keep AGENTS.md aligned with the exact check names.
 
+## Deployment Access
+
+- The current web access gate is Vercel Deployment Protection with `Standard Protection` and `Vercel Authentication`.
+- Treat Standard Protection as protecting preview and generated Vercel deployment URLs, not production or custom domains.
+- Do not describe production or custom domains as private under this model unless the project adopts a stronger protection scope or application/database-level auth.
+- Supabase currently still uses temporary no-auth RLS policies; do not treat Vercel Protection as row-level database auth.
+
 ## Documentation Expectations
 
 - Keep project knowledge in repo-local Markdown files.
