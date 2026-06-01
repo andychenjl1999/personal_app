@@ -196,6 +196,9 @@ export default function TodoApp() {
   const [dueDateDrafts, setDueDateDrafts] = useState<Record<string, string>>(
     {},
   );
+  const [reminderTimeDrafts, setReminderTimeDrafts] = useState<
+    Record<string, string>
+  >({});
 
   useEffect(() => {
     let isCurrentLoad = true;
@@ -523,6 +526,9 @@ export default function TodoApp() {
                 progressNoteDrafts[todo.id] ?? todo.progressNote;
               const dueDateValue =
                 dueDateDrafts[todo.id] ?? unixSecondsToDateInput(todo.dueDate);
+              const reminderTimeValue =
+                reminderTimeDrafts[todo.id] ??
+                unixSecondsToDatetimeLocalInput(todo.reminderTime);
 
               return (
                 <article className="todo-item" key={todo.id}>
@@ -721,17 +727,39 @@ export default function TodoApp() {
                       <span>Reminder</span>
                       <input
                         type="datetime-local"
-                        value={unixSecondsToDatetimeLocalInput(
-                          todo.reminderTime,
-                        )}
+                        value={reminderTimeValue}
                         disabled={isSavingTodo}
                         onChange={(event) =>
-                          void persistTodoUpdate(todo.id, {
-                            reminderTime: datetimeLocalInputToUnixSeconds(
-                              event.target.value,
-                            ),
-                          })
+                          setReminderTimeDrafts((currentDrafts) => ({
+                            ...currentDrafts,
+                            [todo.id]: event.target.value,
+                          }))
                         }
+                        onBlur={async (event) => {
+                          const reminderTime = event.target.value;
+                          const currentReminderTime =
+                            unixSecondsToDatetimeLocalInput(todo.reminderTime);
+
+                          if (reminderTime === currentReminderTime) {
+                            setReminderTimeDrafts((currentDrafts) => {
+                              const nextDrafts = { ...currentDrafts };
+                              delete nextDrafts[todo.id];
+                              return nextDrafts;
+                            });
+                            setError('');
+                            return;
+                          }
+
+                          await persistTodoUpdate(todo.id, {
+                            reminderTime:
+                              datetimeLocalInputToUnixSeconds(reminderTime),
+                          });
+                          setReminderTimeDrafts((currentDrafts) => {
+                            const nextDrafts = { ...currentDrafts };
+                            delete nextDrafts[todo.id];
+                            return nextDrafts;
+                          });
+                        }}
                       />
                     </label>
 
