@@ -1,4 +1,4 @@
-import { createClient } from 'npm:@supabase/supabase-js@2';
+import { withSupabase } from 'npm:@supabase/server';
 
 type ReminderTodo = {
   id: string;
@@ -17,6 +17,16 @@ type SendResult = {
   error?: string;
 };
 
+type SupabaseRpcClient = {
+  rpc: (
+    functionName: string,
+    args?: Record<string, unknown>,
+  ) => Promise<{
+    data: unknown;
+    error: { message: string } | null;
+  }>;
+};
+
 const resendEmailUrl = 'https://api.resend.com/emails';
 const defaultBatchSize = 25;
 const maxBatchSize = 100;
@@ -28,58 +38,61 @@ const corsHeaders = {
     'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (request) => {
-  if (request.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+const authenticatedFetch = withSupabase(
+  { auth: 'secret' },
+  async (request, ctx) => {
+    if (request.method !== 'POST') {
+      return jsonResponse({ error: 'Method not allowed.' }, 405);
+    }
 
-  if (request.method !== 'POST') {
-    return jsonResponse({ error: 'Method not allowed.' }, 405);
-  }
+    try {
+      const config = getConfig();
+      const supabase = ctx.supabaseAdmin as SupabaseRpcClient;
 
-  try {
-    const config = getConfig();
-    const supabase = createClient(
-      config.supabaseUrl,
-      config.supabaseServiceKey,
-      {
-        auth: {
-          persistSession: false,
+      const batchSize = await readBatchSize(request);
+      const { data: reminders, error: claimError } = await supabase.rpc(
+        'claim_due_todo_reminder_emails',
+        {
+          requested_batch_size: batchSize,
         },
-      },
-    );
+      );
 
-    const batchSize = await readBatchSize(request);
-    const { data: reminders, error: claimError } = await supabase.rpc(
-      'claim_due_todo_reminder_emails',
-      {
-        requested_batch_size: batchSize,
-      },
-    );
+      if (claimError) {
+        throw new Error(
+          `Could not claim reminder emails: ${claimError.message}`,
+        );
+      }
 
-    if (claimError) {
-      throw new Error(`Could not claim reminder emails: ${claimError.message}`);
+      const results: SendResult[] = [];
+
+      for (const reminder of (reminders ?? []) as ReminderTodo[]) {
+        results.push(await sendAndRecordReminder(supabase, config, reminder));
+      }
+
+      return jsonResponse({
+        claimed: reminders?.length ?? 0,
+        sent: results.filter((result) => result.ok).length,
+        failed: results.filter((result) => !result.ok).length,
+        results,
+      });
+    } catch (error) {
+      return jsonResponse({ error: getErrorMessage(error) }, 500);
+    }
+  },
+);
+
+export default {
+  fetch(request: Request) {
+    if (request.method === 'OPTIONS') {
+      return new Response('ok', { headers: corsHeaders });
     }
 
-    const results: SendResult[] = [];
-
-    for (const reminder of (reminders ?? []) as ReminderTodo[]) {
-      results.push(await sendAndRecordReminder(supabase, config, reminder));
-    }
-
-    return jsonResponse({
-      claimed: reminders?.length ?? 0,
-      sent: results.filter((result) => result.ok).length,
-      failed: results.filter((result) => !result.ok).length,
-      results,
-    });
-  } catch (error) {
-    return jsonResponse({ error: getErrorMessage(error) }, 500);
-  }
-});
+    return authenticatedFetch(request);
+  },
+};
 
 async function sendAndRecordReminder(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseRpcClient,
   config: ReturnType<typeof getConfig>,
   reminder: ReminderTodo,
 ): Promise<SendResult> {
@@ -156,44 +169,18 @@ async function sendReminderEmail(
 
   if (!response.ok) {
     throw new Error(
-      `Resend ${response.status}: ${truncate(await response.text(), 500)}`,
+      `Resend ${response.status}: ${truncate(await response.text(), 500)} `,
     );
   }
 }
 
 function getConfig() {
-  const supabaseUrl = requireEnv('SUPABASE_URL');
-
   return {
-    supabaseUrl,
-    supabaseServiceKey: getSupabaseServiceKey(),
     resendApiKey: requireEnv('RESEND_API_KEY'),
     emailTo: requireEnv('REMINDER_EMAIL_TO'),
     emailFrom: requireEnv('REMINDER_EMAIL_FROM'),
     timeZone: Deno.env.get('REMINDER_EMAIL_TIME_ZONE') || defaultTimeZone,
   };
-}
-
-function getSupabaseServiceKey() {
-  const legacyServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (legacyServiceRoleKey) {
-    return legacyServiceRoleKey;
-  }
-
-  const secretKeys = Deno.env.get('SUPABASE_SECRET_KEYS');
-  if (!secretKeys) {
-    throw new Error(
-      'Missing SUPABASE_SECRET_KEYS or SUPABASE_SERVICE_ROLE_KEY.',
-    );
-  }
-
-  const parsed = JSON.parse(secretKeys) as Record<string, string>;
-  const serviceKey = parsed.default ?? Object.values(parsed)[0];
-  if (!serviceKey) {
-    throw new Error('SUPABASE_SECRET_KEYS did not contain a usable key.');
-  }
-
-  return serviceKey;
 }
 
 function requireEnv(name: string) {
@@ -222,7 +209,7 @@ async function readBatchSize(request: Request) {
 }
 
 function buildSubject(reminder: ReminderTodo) {
-  return truncate(`Reminder: ${reminder.title}`, 120);
+  return truncate(`Reminder: ${reminder.title} `, 120);
 }
 
 function buildTextEmail(
@@ -232,12 +219,12 @@ function buildTextEmail(
   const lines = [
     reminder.title,
     '',
-    `Priority: ${reminder.priority}`,
-    `Reminder: ${formatDateTime(reminder.reminder_time, config.timeZone)}`,
+    `Priority: ${reminder.priority} `,
+    `Reminder: ${formatDateTime(reminder.reminder_time, config.timeZone)} `,
   ];
 
   if (reminder.due_date) {
-    lines.push(`Due: ${formatDate(reminder.due_date, config.timeZone)}`);
+    lines.push(`Due: ${formatDate(reminder.due_date, config.timeZone)} `);
   }
 
   if (reminder.progress_note.trim()) {
@@ -263,24 +250,23 @@ function buildHtmlEmail(
   const note = reminder.progress_note.trim();
 
   return `<!doctype html>
-<html>
-  <body style="font-family: Arial, sans-serif; color: #111827; line-height: 1.5;">
-    <h1 style="font-size: 20px; margin: 0 0 16px;">${escapeHtml(reminder.title)}</h1>
-    <dl style="margin: 0 0 16px;">
-      ${details
-        .map(
-          ([label, value]) =>
-            `<dt style="font-weight: 700;">${escapeHtml(label)}</dt><dd style="margin: 0 0 8px;">${escapeHtml(value)}</dd>`,
-        )
-        .join('')}
+  <html>
+  <body style="font-family: Arial, sans-serif; color: #111827; line-height: 1.5;" >
+    <h1 style="font-size: 20px; margin: 0 0 16px;" > ${escapeHtml(reminder.title)} </h1>
+    <dl style = "margin: 0 0 16px;">
+        ${details
+      .map(
+        ([label, value]) =>
+          `<dt style="font-weight: 700;">${escapeHtml(label)}</dt><dd style="margin: 0 0 8px;">${escapeHtml(value)}</dd>`,
+      )
+      .join('')}
     </dl>
-    ${
-      note
-        ? `<h2 style="font-size: 16px; margin: 0 0 8px;">Progress note</h2><p style="white-space: pre-wrap; margin: 0;">${escapeHtml(note)}</p>`
-        : ''
+    ${note
+      ? `<h2 style="font-size: 16px; margin: 0 0 8px;">Progress note</h2><p style="white-space: pre-wrap; margin: 0;">${escapeHtml(note)}</p>`
+      : ''
     }
   </body>
-</html>`;
+  </html>`;
 }
 
 function formatDateTime(epochSeconds: number, timeZone: string) {

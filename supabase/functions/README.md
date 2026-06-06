@@ -13,15 +13,15 @@ Required Edge Function secrets:
 - `REMINDER_EMAIL_FROM`: verified Resend sender, for example `Personal App <reminders@example.com>`.
 - `REMINDER_EMAIL_TIME_ZONE`: optional display timezone; defaults to `America/Los_Angeles`.
 
-Supabase provides `SUPABASE_URL` and secret API keys to deployed Edge Functions. Local function runs can use `SUPABASE_SERVICE_ROLE_KEY` as a compatibility fallback.
+Supabase's `withSupabase({ auth: 'secret' })` wrapper validates service-to-service calls with a Supabase secret key sent on the `apikey` header. Keep JWT verification disabled for this function so Supabase Cron can call it with `pg_net`.
 
-The database cron job invokes the function with a publishable key stored in Supabase Vault. Configure these Vault secrets for each Supabase project:
+The database cron job invokes the function with a secret key stored in Supabase Vault. Configure these Vault secrets for each Supabase project:
 
 ```sql
 select vault.create_secret('https://yourproject.supabase.co', 'project_url');
-select vault.create_secret('your_publishable_key', 'publishable_key');
+select vault.create_secret('your_secret_key', 'edge_function_secret_key');
 ```
 
-The cron migration also accepts the older `anon_key` Vault name as a fallback for projects already configured with that naming.
+The cron request must send the secret key as the `apikey` header. Do not send publishable keys or anon JWTs as bearer tokens for this service-to-service function.
 
 If either Vault secret already exists, update it instead of creating a duplicate.
