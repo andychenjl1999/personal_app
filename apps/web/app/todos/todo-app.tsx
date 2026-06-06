@@ -383,7 +383,7 @@ export default function TodoApp() {
       <section className="todo-header">
         <div>
           <p className="eyebrow">Personal App v2</p>
-          <h1>Todo list</h1>
+          <h1>TODO list</h1>
         </div>
       </section>
 
