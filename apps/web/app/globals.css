@@ -308,8 +308,7 @@ button {
 
   .todo-header,
   .todo-workspace,
-  .todo-title-row,
-  .todo-field-grid {
+  .todo-title-row {
     grid-template-columns: 1fr;
   }
 
