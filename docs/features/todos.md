@@ -14,6 +14,7 @@ The todo list is the first web feature for the personal app platform. The curren
 - `reminderTime`: optional Unix timestamp in seconds. It represents the selected local date and time, specific to the minute.
 - `createdAt`: internal timestamp used for the default newest-first order.
 - `updatedAt`: internal timestamp managed by Supabase whenever a row changes.
+- Reminder email delivery fields are internal Supabase-owned state used to claim, retry, and mark reminder emails as sent.
 
 ## Web Behavior
 
@@ -64,4 +65,16 @@ Supabase Cron runs a database function once per day at 5:00am in the `America/Lo
 
 Completed todos and todos without due dates are left unchanged. A run-log table records each Pacific date so duplicate invocations on the same day do not repeat the rollover.
 
-Cross-device sync, reminders, per-user timezones, and Android support are future follow-up work.
+## Reminder Emails
+
+Supabase Cron invokes the `send-todo-reminder-emails` Edge Function once per minute. The function claims due reminder rows before sending so overlapping invocations do not send the same reminder twice.
+
+The first reminder email version is single-owner only. Emails are sent to the server-side `REMINDER_EMAIL_TO` address through Resend, not to per-user recipients. Per-user reminder recipients should be added after authentication and owner-scoped todo rows exist.
+
+Eligible reminders are incomplete todos with a populated `reminderTime` at or before the current time, no successful reminder email send, fewer than three failed send attempts, and no active non-stale claim. Claims older than 10 minutes are treated as stale so failed function runs can be retried.
+
+Changing a todo's `reminderTime` resets reminder email delivery state so the changed reminder can send once at the new time. Completed todos and todos without reminders are ignored.
+
+Reminder email display times default to `America/Los_Angeles` unless `REMINDER_EMAIL_TIME_ZONE` is configured for the Edge Function.
+
+Cross-device sync, per-user timezones, per-user reminder recipients, reminder delivery webhooks, and Android support are future follow-up work.
