@@ -5,6 +5,7 @@ import { CSSProperties, FormEvent, useEffect, useState } from 'react';
 import { getTodoDraftInput, saveTodoDraftInput } from './todo-draft-data';
 import {
   createTodo as createSupabaseTodo,
+  createTodosFromTitles,
   listTodos,
   Todo,
   TodoPriority,
@@ -188,6 +189,7 @@ export default function TodoApp() {
   const [isLoadingDraftInput, setIsLoadingDraftInput] = useState(true);
   const [isCreatingTodo, setIsCreatingTodo] = useState(false);
   const [isSavingDraftInput, setIsSavingDraftInput] = useState(false);
+  const [isConvertingDraftTodos, setIsConvertingDraftTodos] = useState(false);
   const [savingTodoIds, setSavingTodoIds] = useState<Set<string>>(new Set());
   const [titleDrafts, setTitleDrafts] = useState<Record<string, string>>({});
   const [progressNoteDrafts, setProgressNoteDrafts] = useState<
@@ -312,6 +314,36 @@ export default function TodoApp() {
     }
   }
 
+  async function handleConvertDraftTodos() {
+    const draftTodoTitles = getDraftTodoTitles(draftInputContent);
+    if (draftTodoTitles.length === 0) {
+      setDraftInputSaveError(
+        'Add at least one draft todo line before converting.',
+      );
+      return;
+    }
+
+    setIsConvertingDraftTodos(true);
+    setDraftInputSaveError('');
+
+    try {
+      // Convert all parsed lines before clearing the scratchpad so failed inserts leave the draft intact.
+      const convertedTodos = await createTodosFromTitles(draftTodoTitles);
+      const savedDraftInput = await saveTodoDraftInput('');
+
+      setTodos((currentTodos) => [...convertedTodos, ...currentTodos]);
+      setDraftInputContent(savedDraftInput.content);
+      setDraftInputSavedAt(savedDraftInput.updatedAt);
+      setError('');
+    } catch (convertError) {
+      setDraftInputSaveError(
+        getErrorMessage(convertError, 'Unable to convert draft todos.'),
+      );
+    } finally {
+      setIsConvertingDraftTodos(false);
+    }
+  }
+
   function updateLocalTodo(todoId: string, updates: Partial<Todo>) {
     // Local state updates keep controls responsive for both title drafts and optimistic Supabase mutations.
     setTodos((currentTodos) =>
@@ -376,7 +408,13 @@ export default function TodoApp() {
   const sortedTodos = [...todos].sort(compareTodos);
   const isFormDisabled = isCreatingTodo || isLoadingTodos;
   const isDraftInputDisabled =
-    isLoadingDraftInput || isSavingDraftInput || Boolean(draftInputLoadError);
+    isLoadingDraftInput ||
+    isSavingDraftInput ||
+    isConvertingDraftTodos ||
+    Boolean(draftInputLoadError);
+  const draftTodoTitles = getDraftTodoTitles(draftInputContent);
+  const isConvertDraftTodosDisabled =
+    isDraftInputDisabled || draftTodoTitles.length === 0;
 
   return (
     <main className="todo-shell">
@@ -503,13 +541,22 @@ export default function TodoApp() {
               <p className="form-error">{draftInputSaveError}</p>
             ) : null}
 
-            <button
-              type="button"
-              disabled={isDraftInputDisabled}
-              onClick={() => void handleSaveDraftInput()}
-            >
-              {isSavingDraftInput ? 'Saving...' : 'Save draft'}
-            </button>
+            <div className="todo-draft-actions">
+              <button
+                type="button"
+                disabled={isDraftInputDisabled}
+                onClick={() => void handleSaveDraftInput()}
+              >
+                {isSavingDraftInput ? 'Saving...' : 'Save draft'}
+              </button>
+              <button
+                type="button"
+                disabled={isConvertDraftTodosDisabled}
+                onClick={() => void handleConvertDraftTodos()}
+              >
+                {isConvertingDraftTodos ? 'Converting...' : 'Convert todos'}
+              </button>
+            </div>
           </section>
         </div>
 
@@ -794,6 +841,13 @@ function getTodoSortGroup(todo: Todo) {
   }
 
   return 2;
+}
+
+function getDraftTodoTitles(content: string) {
+  return content
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 }
 
 function getErrorMessage(error: unknown, fallback: string) {

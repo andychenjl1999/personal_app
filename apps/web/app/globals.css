@@ -200,6 +200,16 @@ button {
   opacity: 0.68;
 }
 
+.todo-draft-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.todo-draft-actions button {
+  flex: 1 1 150px;
+}
+
 .form-error {
   margin: 0;
   color: var(--danger);
