@@ -944,22 +944,6 @@ export default function TodoApp() {
               <div>
                 <h2 id="planner-heading">Today&apos;s planner</h2>
               </div>
-              <div className="daily-planner-actions">
-                <button
-                  type="button"
-                  disabled={isPlannerImportDisabled}
-                  onClick={() => void handleImportTodosIntoPlanner()}
-                >
-                  {isImportingPlannerTodos ? 'Importing...' : 'Import todos'}
-                </button>
-                <button
-                  type="button"
-                  disabled={isPlannerAddDisabled}
-                  onClick={() => void handleCreatePlannerItem()}
-                >
-                  {isCreatingPlannerItem ? 'Adding...' : 'Add row'}
-                </button>
-              </div>
             </div>
 
             {plannerError ? <p className="form-error">{plannerError}</p> : null}
@@ -1091,6 +1075,26 @@ export default function TodoApp() {
                 )}
               </div>
             </div>
+
+            <div className="daily-planner-header">
+              <div className="daily-planner-actions">
+                <button
+                  type="button"
+                  disabled={isPlannerImportDisabled}
+                  onClick={() => void handleImportTodosIntoPlanner()}
+                >
+                  {isImportingPlannerTodos ? 'Importing...' : 'Import todos'}
+                </button>
+                <button
+                  type="button"
+                  disabled={isPlannerAddDisabled}
+                  onClick={() => void handleCreatePlannerItem()}
+                >
+                  {isCreatingPlannerItem ? 'Adding...' : 'Add row'}
+                </button>
+              </div>
+            </div>
+
           </section>
 
           <div className="todo-filter-bar" aria-label="Todo filters">

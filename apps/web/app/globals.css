@@ -312,7 +312,7 @@ button {
 
 .daily-planner-row {
   display: grid;
-  grid-template-columns: 96px minmax(80px, 0.8fr) 58px 44px;
+  grid-template-columns: 96px minmax(80px, 1fr) 58px 44px;
   gap: 8px;
   align-items: start;
 }
@@ -419,8 +419,7 @@ button {
 .todo-field-grid {
   display: grid;
   grid-template-columns:
-    minmax(110px, 0.8fr) minmax(110px, 0.8fr) minmax(145px, 1fr)
-    minmax(230px, 1.4fr) minmax(76px, max-content);
+    minmax(110px, 0.8fr) minmax(110px, 0.8fr) minmax(145px, 1fr) minmax(230px, 1.4fr) minmax(76px, max-content);
   gap: 12px;
   align-items: end;
 }
@@ -436,6 +435,10 @@ button {
 
   .todo-field-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .daily-planner-row {
+    grid-template-columns: 96px minmax(80px, 0.8fr) 58px 44px;
   }
 
   .complete-control {
@@ -456,5 +459,9 @@ button {
 
   .complete-control {
     justify-items: start;
+  }
+
+  .daily-planner-row {
+    grid-template-columns: 96px minmax(80px, 0.5fr) 58px 44px;
   }
 }
