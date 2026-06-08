@@ -37,6 +37,7 @@ The todo list is the first web feature for the personal app platform. The curren
   - priority `low`: gray `#6B7280`
   - priority `medium`: amber `#D97706`
   - priority `high`: red `#DC2626`
+- Users can filter the displayed list locally by due date (`all`, `today`, `unspecified`), status (`all`, `planned`, `in progress`), and priority (`all`, `low`, `medium`, `high`). These filters do not change Supabase queries or persisted todo data.
 
 ## Sorting
 

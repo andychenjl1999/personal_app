@@ -9,7 +9,7 @@ The current stack is established in the repo. Do not invent additional framework
 ## Core Principles
 
 - Keep changes small, focused, and easy to review.
-- Make changes in small, logically coherent chunks; commit and push each coherent change separately.
+- Make changes in small, logically coherent chunks; commit and push only when explicitly asked.
 - Prefer clear, maintainable solutions over clever ones.
 - Extend existing conventions once they exist; do not replace them casually.
 - Treat documentation as part of the work, not optional cleanup.
@@ -31,11 +31,14 @@ The current stack is established in the repo. Do not invent additional framework
 ## Git And GitHub Workflow
 
 - Use Git and GitHub as the system of record for code, docs, and decision history.
+- Stay on whatever local branch is currently checked out unless explicitly asked to switch branches.
 - Prefer short-lived branches, even for solo development.
 - Use `main` as the protected default branch.
 - Keep commits small and logically grouped.
 - Write meaningful commit messages in plain English that describe the change and intent.
 - Avoid vague commit messages such as `update`, `misc`, or `fix stuff`.
+- Do not make Git commits unless explicitly asked.
+- Do not push to GitHub unless explicitly asked.
 - Before making a commit, confirm the diff contains only intentional changes.
 - Do not rewrite published history unless there is a clear reason and it is explicitly intended.
 - Prefer merging reviewed or intentionally finalized work into `main` rather than pushing incomplete work directly.

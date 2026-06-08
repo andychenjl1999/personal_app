@@ -94,6 +94,7 @@ button {
 
 .todo-form,
 .todo-draft-panel,
+.todo-filter-bar,
 .todo-item,
 .empty-state {
   background: var(--surface);
@@ -110,6 +111,7 @@ button {
 
 .todo-form label,
 .todo-draft-panel label,
+.todo-filter-bar label,
 .todo-title-field,
 .todo-progress-note,
 .todo-field-grid label {
@@ -119,6 +121,7 @@ button {
 
 .todo-form span,
 .todo-draft-panel span,
+.todo-filter-bar span,
 .todo-title-field span,
 .todo-progress-note span,
 .todo-field-grid span {
@@ -129,6 +132,7 @@ button {
 
 .todo-form input,
 .todo-form select,
+.todo-filter-bar select,
 .todo-draft-panel textarea,
 .todo-title-field input,
 .todo-progress-note textarea,
@@ -171,6 +175,7 @@ button {
 
 .todo-form input:focus,
 .todo-form select:focus,
+.todo-filter-bar select:focus,
 .todo-draft-panel textarea:focus,
 .todo-title-field input:focus,
 .todo-progress-note textarea:focus,
@@ -243,6 +248,13 @@ button {
 .todo-list {
   display: grid;
   gap: 12px;
+}
+
+.todo-filter-bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px;
 }
 
 .empty-state {
