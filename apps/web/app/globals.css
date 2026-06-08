@@ -94,10 +94,7 @@ button {
 
 .todo-form,
 .todo-draft-panel,
-<<<<<<< HEAD
 .todo-filter-bar,
-=======
->>>>>>> 066b4501e54f2725331248cf26ee29d7a1aaeb8a
 .daily-planner,
 .todo-item,
 .empty-state {
@@ -264,7 +261,6 @@ button {
   gap: 12px;
 }
 
-<<<<<<< HEAD
 .todo-filter-bar {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -272,8 +268,6 @@ button {
   padding: 16px;
 }
 
-=======
->>>>>>> 066b4501e54f2725331248cf26ee29d7a1aaeb8a
 .daily-planner {
   display: grid;
   gap: 14px;
