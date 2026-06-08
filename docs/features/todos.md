@@ -46,13 +46,13 @@ The daily planner is a separate persisted table shown above the todo list. It is
 
 Planner rows contain:
 
-- `completed`: editable checkbox.
 - `startTime`: plain text field for the row's start time.
-- `endTime`: plain text field for the row's end time.
 - `title`: plain text title that wraps when it exceeds the available column width.
 - `position`: internal zero-based integer used as the saved row order.
 
-Users can add blank planner rows, edit fields in place, drag rows up or down to reorder them, and delete rows. Checkbox edits save immediately. Text edits save when the field loses focus.
+Users can add blank planner rows, edit fields in place, drag rows up or down to reorder them, and delete rows. Text edits save when the field loses focus.
+
+Users can also import visible active todos into the planner. The import action appends todos due today first, followed by todos without a due date. Imported planner rows start with an empty start time and use the todo title as the planner title. Repeated imports intentionally append duplicate planner rows.
 
 After a drag reorder or row delete, the visible planner rows are renumbered contiguously from `0` to `n - 1`, and the updated positions are persisted.
 
