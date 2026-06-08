@@ -1,7 +1,23 @@
 'use client';
 
-import { CSSProperties, FormEvent, useEffect, useState } from 'react';
+import {
+  CSSProperties,
+  DragEvent,
+  FormEvent,
+  useEffect,
+  useState,
+} from 'react';
 
+import {
+  createDailyPlannerItem,
+  createDailyPlannerItems,
+  DailyPlannerItem,
+  deleteDailyPlannerItem,
+  listDailyPlannerItems,
+  UpdateDailyPlannerItemInput,
+  updateDailyPlannerItem,
+  updateDailyPlannerItemPositions,
+} from './daily-planner-data';
 import { getTodoDraftInput, saveTodoDraftInput } from './todo-draft-data';
 import {
   createTodo as createSupabaseTodo,
@@ -214,6 +230,7 @@ function fitTextareaToContent(textarea: HTMLTextAreaElement | null) {
 }
 
 export default function TodoApp() {
+  const [plannerItems, setPlannerItems] = useState<DailyPlannerItem[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [draft, setDraft] = useState<TodoDraft>(initialDraft);
   const [dueDateFilter, setDueDateFilter] = useState<DueDateFilter>('all');
@@ -221,14 +238,31 @@ export default function TodoApp() {
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
   const [draftInputContent, setDraftInputContent] = useState('');
   const [draftInputSavedAt, setDraftInputSavedAt] = useState<string>();
+  const [plannerError, setPlannerError] = useState('');
   const [error, setError] = useState('');
   const [draftInputLoadError, setDraftInputLoadError] = useState('');
   const [draftInputSaveError, setDraftInputSaveError] = useState('');
+  const [isLoadingPlannerItems, setIsLoadingPlannerItems] = useState(true);
+  const [isCreatingPlannerItem, setIsCreatingPlannerItem] = useState(false);
+  const [isImportingPlannerTodos, setIsImportingPlannerTodos] = useState(false);
   const [isLoadingTodos, setIsLoadingTodos] = useState(true);
   const [isLoadingDraftInput, setIsLoadingDraftInput] = useState(true);
   const [isCreatingTodo, setIsCreatingTodo] = useState(false);
   const [isSavingDraftInput, setIsSavingDraftInput] = useState(false);
   const [isConvertingDraftTodos, setIsConvertingDraftTodos] = useState(false);
+  const [savingPlannerItemIds, setSavingPlannerItemIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [draggingPlannerItemId, setDraggingPlannerItemId] = useState<string>();
+  const [plannerStartTimeDrafts, setPlannerStartTimeDrafts] = useState<
+    Record<string, string>
+  >({});
+  const [plannerEndTimeDrafts, setPlannerEndTimeDrafts] = useState<
+    Record<string, string>
+  >({});
+  const [plannerTitleDrafts, setPlannerTitleDrafts] = useState<
+    Record<string, string>
+  >({});
   const [savingTodoIds, setSavingTodoIds] = useState<Set<string>>(new Set());
   const [titleDrafts, setTitleDrafts] = useState<Record<string, string>>({});
   const [progressNoteDrafts, setProgressNoteDrafts] = useState<
@@ -240,6 +274,37 @@ export default function TodoApp() {
   const [reminderTimeDrafts, setReminderTimeDrafts] = useState<
     Record<string, string>
   >({});
+
+  useEffect(() => {
+    let isCurrentLoad = true;
+
+    async function loadInitialPlannerItems() {
+      try {
+        const loadedPlannerItems = await listDailyPlannerItems();
+
+        if (isCurrentLoad) {
+          setPlannerItems(normalizePlannerPositions(loadedPlannerItems));
+          setPlannerError('');
+        }
+      } catch (loadError) {
+        if (isCurrentLoad) {
+          setPlannerError(
+            getErrorMessage(loadError, 'Unable to load daily planner.'),
+          );
+        }
+      } finally {
+        if (isCurrentLoad) {
+          setIsLoadingPlannerItems(false);
+        }
+      }
+    }
+
+    loadInitialPlannerItems();
+
+    return () => {
+      isCurrentLoad = false;
+    };
+  }, []);
 
   useEffect(() => {
     let isCurrentLoad = true;
@@ -383,6 +448,253 @@ export default function TodoApp() {
     }
   }
 
+  async function handleCreatePlannerItem() {
+    setIsCreatingPlannerItem(true);
+    setPlannerError('');
+
+    try {
+      const plannerItem = await createDailyPlannerItem(plannerItems.length);
+      setPlannerItems((currentItems) =>
+        normalizePlannerPositions([...currentItems, plannerItem]),
+      );
+    } catch (createError) {
+      setPlannerError(
+        getErrorMessage(createError, 'Unable to create planner row.'),
+      );
+    } finally {
+      setIsCreatingPlannerItem(false);
+    }
+  }
+
+  async function handleImportTodosIntoPlanner() {
+    const importableTodos = getPlannerImportTodos(sortedTodos);
+
+    if (importableTodos.length === 0) {
+      setPlannerError('');
+      return;
+    }
+
+    setIsImportingPlannerTodos(true);
+    setPlannerError('');
+
+    try {
+      // Imported todos are appended exactly as new planner rows; repeated imports intentionally create duplicates.
+      const importedPlannerItems = await createDailyPlannerItems(
+        importableTodos.map((todo, index) => ({
+          position: plannerItems.length + index,
+          startTime: '',
+          title: todo.title,
+        })),
+      );
+
+      setPlannerItems((currentItems) =>
+        normalizePlannerPositions([...currentItems, ...importedPlannerItems]),
+      );
+    } catch (importError) {
+      setPlannerError(
+        getErrorMessage(importError, 'Unable to import todos into planner.'),
+      );
+    } finally {
+      setIsImportingPlannerTodos(false);
+    }
+  }
+
+  function updateLocalPlannerItem(
+    plannerItemId: string,
+    updates: Partial<DailyPlannerItem>,
+  ) {
+    // Planner rows save independently from todos, so local optimistic edits are scoped to this table only.
+    setPlannerItems((currentItems) =>
+      currentItems.map((item) =>
+        item.id === plannerItemId ? { ...item, ...updates } : item,
+      ),
+    );
+  }
+
+  async function persistPlannerItemUpdate(
+    plannerItemId: string,
+    updates: UpdateDailyPlannerItemInput,
+  ) {
+    const previousPlannerItem = plannerItems.find(
+      (item) => item.id === plannerItemId,
+    );
+    if (!previousPlannerItem) {
+      return false;
+    }
+
+    setSavingPlannerItemIds((currentIds) =>
+      new Set(currentIds).add(plannerItemId),
+    );
+    setPlannerError('');
+    updateLocalPlannerItem(plannerItemId, updates);
+
+    try {
+      const savedPlannerItem = await updateDailyPlannerItem(
+        plannerItemId,
+        updates,
+      );
+      setPlannerItems((currentItems) =>
+        currentItems.map((item) =>
+          item.id === plannerItemId ? savedPlannerItem : item,
+        ),
+      );
+      return true;
+    } catch (updateError) {
+      setPlannerItems((currentItems) =>
+        currentItems.map((item) =>
+          item.id === plannerItemId ? previousPlannerItem : item,
+        ),
+      );
+      setPlannerError(
+        getErrorMessage(updateError, 'Unable to save planner changes.'),
+      );
+      return false;
+    } finally {
+      setSavingPlannerItemIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.delete(plannerItemId);
+        return nextIds;
+      });
+    }
+  }
+
+  async function persistPlannerPositions(nextItems: DailyPlannerItem[]) {
+    const normalizedItems = normalizePlannerPositions(nextItems);
+    const previousItems = plannerItems;
+
+    setPlannerItems(normalizedItems);
+    setPlannerError('');
+
+    try {
+      await updateDailyPlannerItemPositions(
+        normalizedItems.map((item) => ({
+          id: item.id,
+          position: item.position,
+        })),
+      );
+      return true;
+    } catch (updateError) {
+      setPlannerItems(previousItems);
+      setPlannerError(
+        getErrorMessage(updateError, 'Unable to save planner order.'),
+      );
+      return false;
+    }
+  }
+
+  async function handleDeletePlannerItem(plannerItemId: string) {
+    const previousItems = plannerItems;
+    const remainingItems = normalizePlannerPositions(
+      plannerItems.filter((item) => item.id !== plannerItemId),
+    );
+
+    setSavingPlannerItemIds((currentIds) =>
+      new Set(currentIds).add(plannerItemId),
+    );
+    setPlannerItems(remainingItems);
+    setPlannerError('');
+
+    try {
+      await deleteDailyPlannerItem(plannerItemId);
+    } catch (deleteError) {
+      setPlannerItems(previousItems);
+      setPlannerError(
+        getErrorMessage(deleteError, 'Unable to delete planner row.'),
+      );
+      return;
+    } finally {
+      setSavingPlannerItemIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        nextIds.delete(plannerItemId);
+        return nextIds;
+      });
+    }
+
+    clearPlannerDrafts(plannerItemId);
+
+    try {
+      await updateDailyPlannerItemPositions(
+        remainingItems.map((item) => ({
+          id: item.id,
+          position: item.position,
+        })),
+      );
+    } catch (positionError) {
+      // The row is already deleted in Supabase, so keep it removed locally and surface only the compaction failure.
+      setPlannerError(
+        getErrorMessage(positionError, 'Unable to save planner order.'),
+      );
+    }
+  }
+
+  function handlePlannerDragStart(
+    event: DragEvent<HTMLButtonElement>,
+    plannerItemId: string,
+  ) {
+    setDraggingPlannerItemId(plannerItemId);
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', plannerItemId);
+  }
+
+  function handlePlannerDragOver(event: DragEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }
+
+  function handlePlannerDragEnd() {
+    setDraggingPlannerItemId(undefined);
+  }
+
+  async function handlePlannerDrop(
+    event: DragEvent<HTMLDivElement>,
+    targetPlannerItemId: string,
+  ) {
+    event.preventDefault();
+
+    const sourcePlannerItemId =
+      draggingPlannerItemId || event.dataTransfer.getData('text/plain');
+    setDraggingPlannerItemId(undefined);
+
+    if (!sourcePlannerItemId || sourcePlannerItemId === targetPlannerItemId) {
+      return;
+    }
+
+    const sourceIndex = plannerItems.findIndex(
+      (item) => item.id === sourcePlannerItemId,
+    );
+    const targetIndex = plannerItems.findIndex(
+      (item) => item.id === targetPlannerItemId,
+    );
+
+    if (sourceIndex === -1 || targetIndex === -1) {
+      return;
+    }
+
+    const reorderedItems = [...plannerItems];
+    const [movedItem] = reorderedItems.splice(sourceIndex, 1);
+    reorderedItems.splice(targetIndex, 0, movedItem);
+
+    await persistPlannerPositions(reorderedItems);
+  }
+
+  function clearPlannerDrafts(plannerItemId: string) {
+    setPlannerStartTimeDrafts((currentDrafts) => {
+      const nextDrafts = { ...currentDrafts };
+      delete nextDrafts[plannerItemId];
+      return nextDrafts;
+    });
+    setPlannerEndTimeDrafts((currentDrafts) => {
+      const nextDrafts = { ...currentDrafts };
+      delete nextDrafts[plannerItemId];
+      return nextDrafts;
+    });
+    setPlannerTitleDrafts((currentDrafts) => {
+      const nextDrafts = { ...currentDrafts };
+      delete nextDrafts[plannerItemId];
+      return nextDrafts;
+    });
+  }
+
   function updateLocalTodo(todoId: string, updates: Partial<Todo>) {
     // Local state updates keep controls responsive for both title drafts and optimistic Supabase mutations.
     setTodos((currentTodos) =>
@@ -465,6 +777,13 @@ export default function TodoApp() {
     return true;
   });
   const isFormDisabled = isCreatingTodo || isLoadingTodos;
+  const isPlannerAddDisabled =
+    isLoadingPlannerItems || isCreatingPlannerItem || isImportingPlannerTodos;
+  const isPlannerImportDisabled =
+    isLoadingPlannerItems ||
+    isLoadingTodos ||
+    isCreatingPlannerItem ||
+    isImportingPlannerTodos;
   const isDraftInputDisabled =
     isLoadingDraftInput ||
     isSavingDraftInput ||
@@ -619,6 +938,165 @@ export default function TodoApp() {
         </div>
 
         <div className="todo-list" aria-live="polite">
+
+          <section className="daily-planner" aria-labelledby="planner-heading">
+            <div className="daily-planner-header">
+              <div>
+                <h2 id="planner-heading">Today&apos;s planner</h2>
+              </div>
+            </div>
+
+            {plannerError ? <p className="form-error">{plannerError}</p> : null}
+
+            <div className="daily-planner-table-wrap">
+              <div className="daily-planner-table" role="table">
+                <div
+                  className="daily-planner-row daily-planner-row-header"
+                  role="row"
+                >
+                  <span role="columnheader">Start</span>
+                  <span role="columnheader">Title</span>
+                  <span role="columnheader">Delete</span>
+                  <span role="columnheader"> </span>
+                </div>
+
+                {isLoadingPlannerItems ? (
+                  <p className="daily-planner-status">Loading planner...</p>
+                ) : plannerItems.length === 0 ? (
+                  <p className="daily-planner-status">No planner rows yet.</p>
+                ) : (
+                  plannerItems.map((plannerItem) => {
+                    const isSavingPlannerItem = savingPlannerItemIds.has(
+                      plannerItem.id,
+                    );
+                    const startTimeValue =
+                      plannerStartTimeDrafts[plannerItem.id] ??
+                      plannerItem.startTime;
+                    const titleValue =
+                      plannerTitleDrafts[plannerItem.id] ?? plannerItem.title;
+                    const isDragging = draggingPlannerItemId === plannerItem.id;
+
+                    return (
+                      <div
+                        className={`daily-planner-row${isDragging ? ' is-dragging' : ''
+                          }`}
+                        key={plannerItem.id}
+                        role="row"
+                        onDragOver={handlePlannerDragOver}
+                        onDrop={(event) =>
+                          void handlePlannerDrop(event, plannerItem.id)
+                        }
+                      >
+                        <input
+                          aria-label="Start time"
+                          type="text"
+                          value={startTimeValue}
+                          disabled={isSavingPlannerItem}
+                          onChange={(event) =>
+                            setPlannerStartTimeDrafts((currentDrafts) => ({
+                              ...currentDrafts,
+                              [plannerItem.id]: event.target.value,
+                            }))
+                          }
+                          onBlur={async (event) => {
+                            const startTime = event.target.value;
+
+                            if (startTime !== plannerItem.startTime) {
+                              await persistPlannerItemUpdate(plannerItem.id, {
+                                startTime,
+                              });
+                            }
+
+                            setPlannerStartTimeDrafts((currentDrafts) => {
+                              const nextDrafts = { ...currentDrafts };
+                              delete nextDrafts[plannerItem.id];
+                              return nextDrafts;
+                            });
+                          }}
+                        />
+                        <textarea
+                          aria-label="Title"
+                          ref={fitTextareaToContent}
+                          value={titleValue}
+                          disabled={isSavingPlannerItem}
+                          rows={1}
+                          onChange={(event) => {
+                            setPlannerTitleDrafts((currentDrafts) => ({
+                              ...currentDrafts,
+                              [plannerItem.id]: event.target.value,
+                            }));
+                            fitTextareaToContent(event.currentTarget);
+                          }}
+                          onBlur={async (event) => {
+                            const title = event.target.value;
+
+                            if (title !== plannerItem.title) {
+                              await persistPlannerItemUpdate(plannerItem.id, {
+                                title,
+                              });
+                            }
+
+                            setPlannerTitleDrafts((currentDrafts) => {
+                              const nextDrafts = { ...currentDrafts };
+                              delete nextDrafts[plannerItem.id];
+                              return nextDrafts;
+                            });
+                          }}
+                        />
+                        <button
+                          className="daily-planner-icon-button daily-planner-delete"
+                          type="button"
+                          disabled={isSavingPlannerItem}
+                          title="Delete row"
+                          aria-label="Delete planner row"
+                          onClick={() =>
+                            void handleDeletePlannerItem(plannerItem.id)
+                          }
+                        >
+                          x
+                        </button>
+                        <button
+                          className="daily-planner-icon-button daily-planner-drag-handle"
+                          type="button"
+                          draggable={!isSavingPlannerItem}
+                          disabled={isSavingPlannerItem}
+                          title="Move row"
+                          aria-label="Move planner row"
+                          onDragStart={(event) =>
+                            handlePlannerDragStart(event, plannerItem.id)
+                          }
+                          onDragEnd={handlePlannerDragEnd}
+                        >
+                          =
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="daily-planner-header">
+              <div className="daily-planner-actions">
+                <button
+                  type="button"
+                  disabled={isPlannerImportDisabled}
+                  onClick={() => void handleImportTodosIntoPlanner()}
+                >
+                  {isImportingPlannerTodos ? 'Importing...' : 'Import todos'}
+                </button>
+                <button
+                  type="button"
+                  disabled={isPlannerAddDisabled}
+                  onClick={() => void handleCreatePlannerItem()}
+                >
+                  {isCreatingPlannerItem ? 'Adding...' : 'Add row'}
+                </button>
+              </div>
+            </div>
+
+          </section>
+
           <div className="todo-filter-bar" aria-label="Todo filters">
             <label>
               <span>Due date</span>
@@ -958,6 +1436,33 @@ function getDraftTodoTitles(content: string) {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
+}
+
+function getPlannerImportTodos(todos: Todo[]) {
+  const todayDateInput = getLocalDateInput(new Date());
+  const dueTodayTodos = todos.filter(
+    (todo) =>
+      todo.dueDate !== undefined &&
+      unixSecondsToDateInput(todo.dueDate) === todayDateInput,
+  );
+  const undatedTodos = todos.filter((todo) => todo.dueDate === undefined);
+
+  return [...dueTodayTodos, ...undatedTodos];
+}
+
+function getLocalDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function normalizePlannerPositions(items: DailyPlannerItem[]) {
+  return items.map((item, index) => ({
+    ...item,
+    position: index,
+  }));
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
