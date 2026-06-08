@@ -440,6 +440,6 @@ button {
   }
 
   .daily-planner-row {
-    grid-template-columns: 96px minmax(80px, 0.5fr) 58px 44px;
+    grid-template-columns: 96px minmax(80px, 0.4fr) 58px 44px;
   }
 }
