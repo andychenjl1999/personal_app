@@ -814,10 +814,8 @@ export default function TodoApp() {
                   className="daily-planner-row daily-planner-row-header"
                   role="row"
                 >
-                  <span role="columnheader">Move</span>
-                  <span role="columnheader">Done</span>
+                  <span role="columnheader"> </span>
                   <span role="columnheader">Start</span>
-                  <span role="columnheader">End</span>
                   <span role="columnheader">Title</span>
                   <span role="columnheader">Delete</span>
                 </div>
@@ -843,9 +841,8 @@ export default function TodoApp() {
 
                     return (
                       <div
-                        className={`daily-planner-row${
-                          isDragging ? ' is-dragging' : ''
-                        }`}
+                        className={`daily-planner-row${isDragging ? ' is-dragging' : ''
+                          }`}
                         key={plannerItem.id}
                         role="row"
                         onDragOver={handlePlannerDragOver}
@@ -868,17 +865,6 @@ export default function TodoApp() {
                           =
                         </button>
                         <input
-                          aria-label="Completed"
-                          type="checkbox"
-                          checked={plannerItem.completed}
-                          disabled={isSavingPlannerItem}
-                          onChange={(event) =>
-                            void persistPlannerItemUpdate(plannerItem.id, {
-                              completed: event.target.checked,
-                            })
-                          }
-                        />
-                        <input
                           aria-label="Start time"
                           type="text"
                           value={startTimeValue}
@@ -899,33 +885,6 @@ export default function TodoApp() {
                             }
 
                             setPlannerStartTimeDrafts((currentDrafts) => {
-                              const nextDrafts = { ...currentDrafts };
-                              delete nextDrafts[plannerItem.id];
-                              return nextDrafts;
-                            });
-                          }}
-                        />
-                        <input
-                          aria-label="End time"
-                          type="text"
-                          value={endTimeValue}
-                          disabled={isSavingPlannerItem}
-                          onChange={(event) =>
-                            setPlannerEndTimeDrafts((currentDrafts) => ({
-                              ...currentDrafts,
-                              [plannerItem.id]: event.target.value,
-                            }))
-                          }
-                          onBlur={async (event) => {
-                            const endTime = event.target.value;
-
-                            if (endTime !== plannerItem.endTime) {
-                              await persistPlannerItemUpdate(plannerItem.id, {
-                                endTime,
-                              });
-                            }
-
-                            setPlannerEndTimeDrafts((currentDrafts) => {
                               const nextDrafts = { ...currentDrafts };
                               delete nextDrafts[plannerItem.id];
                               return nextDrafts;
