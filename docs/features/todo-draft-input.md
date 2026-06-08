@@ -2,7 +2,7 @@
 
 ## Summary
 
-The todo draft input is a backlog scratchpad for rough todo ideas before they are promoted into structured todos. The first backend stores the entire draft area as one string so the writing surface can stay flexible while parsing and promotion workflows are designed later.
+The todo draft input is a backlog scratchpad for rough todo ideas before they are promoted into structured todos. The backend stores the entire draft area as one string so the writing surface can stay flexible while still supporting line-by-line conversion into todo items.
 
 ## Backend Shape
 
@@ -24,10 +24,15 @@ The current no-auth single-user phase uses temporary permissive anon RLS policie
 - The panel loads the saved draft string when the page opens.
 - Users save changes manually with the `Save draft` button.
 - The textarea stores the draft exactly as typed, including empty text and newlines.
+- Users convert draft lines into todos with the `Convert todos` button.
+- Conversion trims each draft line, skips blank lines, and creates one todo per non-empty line.
+- Converted todos send only the title to Supabase. The database supplies default status, priority, progress note, timestamps, and empty optional date/reminder fields.
+- Successfully converted todos appear in the current todo list without a page refresh.
+- A successful conversion clears the draft textarea and persists that cleared scratchpad.
+- A failed conversion leaves the draft textarea unchanged so the user can retry or edit it.
 - If loading the draft fails, only the draft panel is disabled; the structured todo workflow remains available.
 
 ## Future Work
 
 - Decide whether saving should also happen on debounce.
-- Design promotion from draft lines into structured todos.
-- Decide whether old promoted text is removed, archived, or left in place.
+- Decide whether converted drafts need an archive or conversion history.

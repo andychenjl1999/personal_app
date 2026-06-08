@@ -20,6 +20,7 @@ The todo list is the first web feature for the personal app platform. The curren
 
 - Users can create todos from the main web interface.
 - Creating a todo does not ask for a progress note; new todos start with an empty note.
+- Users can convert draft todo lines into title-only todos. Draft-converted todos use database defaults for status, priority, progress note, due date, and reminder time.
 - Users can update todo fields inline in the list.
 - Users can update the progress note inline with a multi-line text area on each todo item.
 - Users select due dates with a date input.

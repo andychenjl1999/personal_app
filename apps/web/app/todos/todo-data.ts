@@ -80,6 +80,19 @@ function buildCreatePayload(input: CreateTodoInput) {
   };
 }
 
+function buildTitleOnlyCreatePayloads(titles: string[]) {
+  const payloads = titles
+    .map((title) => title.trim())
+    .filter((title) => title.length > 0)
+    .map((title) => ({ title }));
+
+  if (payloads.length === 0) {
+    throw new Error('Add at least one draft todo line before converting.');
+  }
+
+  return payloads;
+}
+
 function buildUpdatePayload(updates: UpdateTodoInput) {
   const payload: Partial<
     Pick<
@@ -153,6 +166,21 @@ export async function createTodo(input: CreateTodoInput): Promise<Todo> {
 
   // Mutations select the saved row so local state reflects database defaults, triggers, and constraints.
   return mapTodoRow(data);
+}
+
+export async function createTodosFromTitles(titles: string[]): Promise<Todo[]> {
+  const { data, error } = await getSupabaseClient()
+    .from('todos')
+    .insert(buildTitleOnlyCreatePayloads(titles))
+    .select(todoColumns)
+    .returns<TodoRow[]>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  // Draft conversion intentionally sends only titles; the returned rows include database-owned defaults.
+  return data.map(mapTodoRow);
 }
 
 export async function updateTodo(
