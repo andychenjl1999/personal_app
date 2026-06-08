@@ -19,6 +19,7 @@ The todo list is the first web feature for the personal app platform. The curren
 ## Web Behavior
 
 - Users can create todos from the main web interface.
+- Users can manage a daily planner table above the todo list.
 - Creating a todo does not ask for a progress note; new todos start with an empty note.
 - Users can update todo fields inline in the list.
 - Users can update the progress note inline with a multi-line text area on each todo item.
@@ -35,7 +36,23 @@ The todo list is the first web feature for the personal app platform. The curren
   - status `completed`: green `#16A34A`
   - priority `low`: gray `#6B7280`
   - priority `medium`: amber `#D97706`
-  - priority `high`: red `#DC2626`
+- priority `high`: red `#DC2626`
+
+## Daily Planner
+
+The daily planner is a separate persisted table shown above the todo list. It is a single ordered list and is not scoped by date in this version.
+
+Planner rows contain:
+
+- `completed`: editable checkbox.
+- `startTime`: plain text field for the row's start time.
+- `endTime`: plain text field for the row's end time.
+- `title`: plain text title that wraps when it exceeds the available column width.
+- `position`: internal zero-based integer used as the saved row order.
+
+Users can add blank planner rows, edit fields in place, drag rows up or down to reorder them, and delete rows. Checkbox edits save immediately. Text edits save when the field loses focus.
+
+After a drag reorder or row delete, the visible planner rows are renumbered contiguously from `0` to `n - 1`, and the updated positions are persisted.
 
 ## Sorting
 
@@ -54,6 +71,8 @@ Each sort can toggle between ascending and descending direction. Optional due da
 ## Persistence
 
 Todos are stored in the Supabase `public.todos` table. The web app uses the browser Supabase client with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+
+Daily planner rows are stored in the Supabase `public.daily_todo_planner_items` table.
 
 Old browser `localStorage` data is ignored and is not migrated into Supabase.
 
@@ -77,4 +96,4 @@ Changing a todo's `reminderTime` resets reminder email delivery state so the cha
 
 Reminder email display times default to `America/Los_Angeles` unless `REMINDER_EMAIL_TIME_ZONE` is configured for the Edge Function.
 
-Cross-device sync, per-user timezones, per-user reminder recipients, reminder delivery webhooks, and Android support are future follow-up work.
+Daily planner time validation, date-specific planner lists, cross-device sync, per-user timezones, per-user reminder recipients, reminder delivery webhooks, and Android support are future follow-up work.

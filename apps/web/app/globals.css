@@ -94,6 +94,7 @@ button {
 
 .todo-form,
 .todo-draft-panel,
+.daily-planner,
 .todo-item,
 .empty-state {
   background: var(--surface);
@@ -130,6 +131,8 @@ button {
 .todo-form input,
 .todo-form select,
 .todo-draft-panel textarea,
+.daily-planner input,
+.daily-planner textarea,
 .todo-title-field input,
 .todo-progress-note textarea,
 .todo-field-grid input,
@@ -162,6 +165,7 @@ button {
   resize: vertical;
 }
 
+.daily-planner textarea,
 .todo-progress-note textarea {
   min-height: 42px;
   line-height: 1.45;
@@ -172,6 +176,9 @@ button {
 .todo-form input:focus,
 .todo-form select:focus,
 .todo-draft-panel textarea:focus,
+.daily-planner input:focus,
+.daily-planner textarea:focus,
+.daily-planner button:focus,
 .todo-title-field input:focus,
 .todo-progress-note textarea:focus,
 .todo-field-grid input:focus,
@@ -181,7 +188,8 @@ button {
 }
 
 .todo-form button,
-.todo-draft-panel button {
+.todo-draft-panel button,
+.daily-planner-header button {
   min-height: 44px;
   border-radius: 7px;
   background: var(--accent);
@@ -190,12 +198,15 @@ button {
 }
 
 .todo-form button:hover,
-.todo-draft-panel button:hover {
+.todo-draft-panel button:hover,
+.daily-planner-header button:hover {
   background: var(--accent-strong);
 }
 
 .todo-form button:disabled,
-.todo-draft-panel button:disabled {
+.todo-draft-panel button:disabled,
+.daily-planner-header button:disabled,
+.daily-planner-icon-button:disabled {
   cursor: not-allowed;
   opacity: 0.68;
 }
@@ -233,6 +244,107 @@ button {
 .todo-list {
   display: grid;
   gap: 12px;
+}
+
+.daily-planner {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.daily-planner-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.daily-planner-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.2;
+}
+
+.daily-planner-header button {
+  min-width: 104px;
+  padding: 0 14px;
+}
+
+.daily-planner-table-wrap {
+  overflow-x: auto;
+}
+
+.daily-planner-table {
+  display: grid;
+  min-width: 720px;
+  gap: 8px;
+}
+
+.daily-planner-row {
+  display: grid;
+  grid-template-columns: 44px 58px 96px 96px minmax(260px, 1fr) 58px;
+  gap: 8px;
+  align-items: start;
+}
+
+.daily-planner-row.is-dragging {
+  opacity: 0.54;
+}
+
+.daily-planner-row-header {
+  align-items: center;
+  padding: 0 2px;
+}
+
+.daily-planner-row-header span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.daily-planner-row input[type='checkbox'] {
+  justify-self: center;
+  width: 24px;
+  height: 24px;
+  min-height: 24px;
+  margin: 9px 0 0;
+  accent-color: var(--accent);
+}
+
+.daily-planner textarea {
+  overflow-wrap: anywhere;
+}
+
+.daily-planner-icon-button {
+  display: inline-grid;
+  width: 42px;
+  min-height: 42px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-muted);
+  color: var(--muted);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.daily-planner-drag-handle {
+  cursor: grab;
+}
+
+.daily-planner-drag-handle:active {
+  cursor: grabbing;
+}
+
+.daily-planner-delete {
+  color: var(--danger);
+}
+
+.daily-planner-status {
+  margin: 0;
+  padding: 12px 2px;
+  color: var(--muted);
 }
 
 .empty-state {
