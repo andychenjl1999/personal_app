@@ -242,7 +242,7 @@ button {
 
 .todo-filter-bar {
   display: grid;
-  grid-template-columns: repeat(3, minmax(130px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   padding: 16px;
 }
@@ -308,10 +308,6 @@ button {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .todo-filter-bar {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-
   .complete-control {
     min-height: 42px;
   }
@@ -324,8 +320,7 @@ button {
 
   .todo-header,
   .todo-workspace,
-  .todo-title-row,
-  .todo-filter-bar {
+  .todo-title-row {
     grid-template-columns: 1fr;
   }
 
