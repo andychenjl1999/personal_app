@@ -15,6 +15,11 @@ export type UpdateDailyPlannerItemInput = Partial<
   Pick<DailyPlannerItem, 'completed' | 'startTime' | 'endTime' | 'title'>
 >;
 
+export type CreateDailyPlannerItemInput = Pick<
+  DailyPlannerItem,
+  'position' | 'startTime' | 'title'
+>;
+
 export type DailyPlannerPositionInput = Pick<
   DailyPlannerItem,
   'id' | 'position'
@@ -104,6 +109,33 @@ export async function createDailyPlannerItem(
   }
 
   return mapDailyPlannerItemRow(data);
+}
+
+export async function createDailyPlannerItems(
+  items: CreateDailyPlannerItemInput[],
+): Promise<DailyPlannerItem[]> {
+  if (items.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await getSupabaseClient()
+    .from('daily_todo_planner_items')
+    .insert(
+      items.map((item) => ({
+        position: item.position,
+        start_time: item.startTime,
+        title: item.title,
+      })),
+    )
+    .select(dailyPlannerColumns)
+    .order('position', { ascending: true })
+    .returns<DailyPlannerItemRow[]>();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data.map(mapDailyPlannerItemRow);
 }
 
 export async function updateDailyPlannerItem(

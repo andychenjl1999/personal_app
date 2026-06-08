@@ -10,6 +10,7 @@ import {
 
 import {
   createDailyPlannerItem,
+  createDailyPlannerItems,
   DailyPlannerItem,
   deleteDailyPlannerItem,
   listDailyPlannerItems,
@@ -203,6 +204,7 @@ export default function TodoApp() {
   const [draftInputSaveError, setDraftInputSaveError] = useState('');
   const [isLoadingPlannerItems, setIsLoadingPlannerItems] = useState(true);
   const [isCreatingPlannerItem, setIsCreatingPlannerItem] = useState(false);
+  const [isImportingPlannerTodos, setIsImportingPlannerTodos] = useState(false);
   const [isLoadingTodos, setIsLoadingTodos] = useState(true);
   const [isLoadingDraftInput, setIsLoadingDraftInput] = useState(true);
   const [isCreatingTodo, setIsCreatingTodo] = useState(false);
@@ -390,6 +392,39 @@ export default function TodoApp() {
       );
     } finally {
       setIsCreatingPlannerItem(false);
+    }
+  }
+
+  async function handleImportTodosIntoPlanner() {
+    const importableTodos = getPlannerImportTodos(sortedTodos);
+
+    if (importableTodos.length === 0) {
+      setPlannerError('');
+      return;
+    }
+
+    setIsImportingPlannerTodos(true);
+    setPlannerError('');
+
+    try {
+      // Imported todos are appended exactly as new planner rows; repeated imports intentionally create duplicates.
+      const importedPlannerItems = await createDailyPlannerItems(
+        importableTodos.map((todo, index) => ({
+          position: plannerItems.length + index,
+          startTime: '',
+          title: todo.title,
+        })),
+      );
+
+      setPlannerItems((currentItems) =>
+        normalizePlannerPositions([...currentItems, ...importedPlannerItems]),
+      );
+    } catch (importError) {
+      setPlannerError(
+        getErrorMessage(importError, 'Unable to import todos into planner.'),
+      );
+    } finally {
+      setIsImportingPlannerTodos(false);
     }
   }
 
@@ -652,7 +687,13 @@ export default function TodoApp() {
 
   const sortedTodos = [...todos].sort(compareTodos);
   const isFormDisabled = isCreatingTodo || isLoadingTodos;
-  const isPlannerAddDisabled = isLoadingPlannerItems || isCreatingPlannerItem;
+  const isPlannerAddDisabled =
+    isLoadingPlannerItems || isCreatingPlannerItem || isImportingPlannerTodos;
+  const isPlannerImportDisabled =
+    isLoadingPlannerItems ||
+    isLoadingTodos ||
+    isCreatingPlannerItem ||
+    isImportingPlannerTodos;
   const isDraftInputDisabled =
     isLoadingDraftInput || isSavingDraftInput || Boolean(draftInputLoadError);
 
@@ -797,13 +838,22 @@ export default function TodoApp() {
               <div>
                 <h2 id="planner-heading">Today&apos;s planner</h2>
               </div>
-              <button
-                type="button"
-                disabled={isPlannerAddDisabled}
-                onClick={() => void handleCreatePlannerItem()}
-              >
-                {isCreatingPlannerItem ? 'Adding...' : 'Add row'}
-              </button>
+              <div className="daily-planner-actions">
+                <button
+                  type="button"
+                  disabled={isPlannerImportDisabled}
+                  onClick={() => void handleImportTodosIntoPlanner()}
+                >
+                  {isImportingPlannerTodos ? 'Importing...' : 'Import todos'}
+                </button>
+                <button
+                  type="button"
+                  disabled={isPlannerAddDisabled}
+                  onClick={() => void handleCreatePlannerItem()}
+                >
+                  {isCreatingPlannerItem ? 'Adding...' : 'Add row'}
+                </button>
+              </div>
             </div>
 
             {plannerError ? <p className="form-error">{plannerError}</p> : null}
@@ -814,10 +864,10 @@ export default function TodoApp() {
                   className="daily-planner-row daily-planner-row-header"
                   role="row"
                 >
-                  <span role="columnheader"> </span>
                   <span role="columnheader">Start</span>
                   <span role="columnheader">Title</span>
                   <span role="columnheader">Delete</span>
+                  <span role="columnheader"> </span>
                 </div>
 
                 {isLoadingPlannerItems ? (
@@ -832,17 +882,15 @@ export default function TodoApp() {
                     const startTimeValue =
                       plannerStartTimeDrafts[plannerItem.id] ??
                       plannerItem.startTime;
-                    const endTimeValue =
-                      plannerEndTimeDrafts[plannerItem.id] ??
-                      plannerItem.endTime;
                     const titleValue =
                       plannerTitleDrafts[plannerItem.id] ?? plannerItem.title;
                     const isDragging = draggingPlannerItemId === plannerItem.id;
 
                     return (
                       <div
-                        className={`daily-planner-row${isDragging ? ' is-dragging' : ''
-                          }`}
+                        className={`daily-planner-row${
+                          isDragging ? ' is-dragging' : ''
+                        }`}
                         key={plannerItem.id}
                         role="row"
                         onDragOver={handlePlannerDragOver}
@@ -850,20 +898,6 @@ export default function TodoApp() {
                           void handlePlannerDrop(event, plannerItem.id)
                         }
                       >
-                        <button
-                          className="daily-planner-icon-button daily-planner-drag-handle"
-                          type="button"
-                          draggable={!isSavingPlannerItem}
-                          disabled={isSavingPlannerItem}
-                          title="Move row"
-                          aria-label="Move planner row"
-                          onDragStart={(event) =>
-                            handlePlannerDragStart(event, plannerItem.id)
-                          }
-                          onDragEnd={handlePlannerDragEnd}
-                        >
-                          =
-                        </button>
                         <input
                           aria-label="Start time"
                           type="text"
@@ -931,6 +965,20 @@ export default function TodoApp() {
                           }
                         >
                           x
+                        </button>
+                        <button
+                          className="daily-planner-icon-button daily-planner-drag-handle"
+                          type="button"
+                          draggable={!isSavingPlannerItem}
+                          disabled={isSavingPlannerItem}
+                          title="Move row"
+                          aria-label="Move planner row"
+                          onDragStart={(event) =>
+                            handlePlannerDragStart(event, plannerItem.id)
+                          }
+                          onDragEnd={handlePlannerDragEnd}
+                        >
+                          =
                         </button>
                       </div>
                     );
@@ -1220,6 +1268,26 @@ function getTodoSortGroup(todo: Todo) {
   }
 
   return 2;
+}
+
+function getPlannerImportTodos(todos: Todo[]) {
+  const todayDateInput = getLocalDateInput(new Date());
+  const dueTodayTodos = todos.filter(
+    (todo) =>
+      todo.dueDate !== undefined &&
+      unixSecondsToDateInput(todo.dueDate) === todayDateInput,
+  );
+  const undatedTodos = todos.filter((todo) => todo.dueDate === undefined);
+
+  return [...dueTodayTodos, ...undatedTodos];
+}
+
+function getLocalDateInput(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
 }
 
 function normalizePlannerPositions(items: DailyPlannerItem[]) {
