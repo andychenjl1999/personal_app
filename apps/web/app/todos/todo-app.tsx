@@ -20,6 +20,10 @@ type TodoDraft = {
   reminderTime: string;
 };
 
+type DueDateFilter = 'all' | 'today' | 'unspecified';
+type StatusFilter = 'all' | Extract<TodoStatus, 'planned' | 'in-progress'>;
+type PriorityFilter = 'all' | TodoPriority;
+
 const initialDraft: TodoDraft = {
   title: '',
   priority: 'medium',
@@ -37,6 +41,23 @@ const priorityLabels: Record<TodoPriority, string> = {
   low: 'Low',
   medium: 'Medium',
   high: 'High',
+};
+
+const dueDateFilterLabels: Record<DueDateFilter, string> = {
+  all: 'All',
+  today: 'Today',
+  unspecified: 'Unspecified',
+};
+
+const statusFilterLabels: Record<StatusFilter, string> = {
+  all: 'All',
+  planned: 'Planned',
+  'in-progress': 'In progress',
+};
+
+const priorityFilterLabels: Record<PriorityFilter, string> = {
+  all: 'All',
+  ...priorityLabels,
 };
 
 type FieldTone = {
@@ -160,6 +181,21 @@ function unixSecondsToDatetimeLocalInput(value?: number) {
   return `${year}-${month}-${day}T${hour}:${minute}`;
 }
 
+function isTodoDueToday(todo: Todo) {
+  if (todo.dueDate === undefined) {
+    return false;
+  }
+
+  const dueDate = unixSecondsToDate(todo.dueDate);
+  const today = new Date();
+
+  return (
+    dueDate.getFullYear() === today.getFullYear() &&
+    dueDate.getMonth() === today.getMonth() &&
+    dueDate.getDate() === today.getDate()
+  );
+}
+
 function formatSavedAt(value: string) {
   return new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
@@ -179,6 +215,9 @@ function fitTextareaToContent(textarea: HTMLTextAreaElement | null) {
 export default function TodoApp() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [draft, setDraft] = useState<TodoDraft>(initialDraft);
+  const [dueDateFilter, setDueDateFilter] = useState<DueDateFilter>('all');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>('all');
   const [draftInputContent, setDraftInputContent] = useState('');
   const [draftInputSavedAt, setDraftInputSavedAt] = useState<string>();
   const [error, setError] = useState('');
@@ -374,6 +413,25 @@ export default function TodoApp() {
   }
 
   const sortedTodos = [...todos].sort(compareTodos);
+  const visibleTodos = sortedTodos.filter((todo) => {
+    if (dueDateFilter === 'today' && !isTodoDueToday(todo)) {
+      return false;
+    }
+
+    if (dueDateFilter === 'unspecified' && todo.dueDate !== undefined) {
+      return false;
+    }
+
+    if (statusFilter !== 'all' && todo.status !== statusFilter) {
+      return false;
+    }
+
+    if (priorityFilter !== 'all' && todo.priority !== priorityFilter) {
+      return false;
+    }
+
+    return true;
+  });
   const isFormDisabled = isCreatingTodo || isLoadingTodos;
   const isDraftInputDisabled =
     isLoadingDraftInput || isSavingDraftInput || Boolean(draftInputLoadError);
@@ -514,12 +572,64 @@ export default function TodoApp() {
         </div>
 
         <div className="todo-list" aria-live="polite">
+          <div className="todo-filter-bar" aria-label="Todo filters">
+            <label>
+              <span>Due date</span>
+              <select
+                value={dueDateFilter}
+                onChange={(event) =>
+                  setDueDateFilter(event.target.value as DueDateFilter)
+                }
+              >
+                {Object.entries(dueDateFilterLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Status</span>
+              <select
+                value={statusFilter}
+                onChange={(event) =>
+                  setStatusFilter(event.target.value as StatusFilter)
+                }
+              >
+                {Object.entries(statusFilterLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label>
+              <span>Priority</span>
+              <select
+                value={priorityFilter}
+                onChange={(event) =>
+                  setPriorityFilter(event.target.value as PriorityFilter)
+                }
+              >
+                {Object.entries(priorityFilterLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
           {isLoadingTodos ? (
             <p className="empty-state">Loading todos...</p>
           ) : todos.length === 0 ? (
             <p className="empty-state">No todos yet. Create one to start.</p>
+          ) : visibleTodos.length === 0 ? (
+            <p className="empty-state">No todos match the selected filters.</p>
           ) : (
-            sortedTodos.map((todo) => {
+            visibleTodos.map((todo) => {
               const isSavingTodo = savingTodoIds.has(todo.id);
               const titleValue = titleDrafts[todo.id] ?? todo.title;
               const progressNoteValue =
