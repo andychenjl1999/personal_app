@@ -467,7 +467,10 @@ export default function TodoApp() {
   }
 
   async function handleImportTodosIntoPlanner() {
-    const importableTodos = getPlannerImportTodos(sortedTodos);
+    const importableTodos = getDedupedPlannerImportTodos(
+      sortedTodos,
+      plannerItems,
+    );
 
     if (importableTodos.length === 0) {
       setPlannerError('');
@@ -478,7 +481,7 @@ export default function TodoApp() {
     setPlannerError('');
 
     try {
-      // Imported todos are appended exactly as new planner rows; repeated imports intentionally create duplicates.
+      // Import only titles that are not already present in the planner; manual planner rows remain unrestricted.
       const importedPlannerItems = await createDailyPlannerItems(
         importableTodos.map((todo, index) => ({
           position: plannerItems.length + index,
@@ -1448,6 +1451,36 @@ function getPlannerImportTodos(todos: Todo[]) {
   const undatedTodos = todos.filter((todo) => todo.dueDate === undefined);
 
   return [...dueTodayTodos, ...undatedTodos];
+}
+
+function getDedupedPlannerImportTodos(
+  todos: Todo[],
+  plannerItems: DailyPlannerItem[],
+) {
+  const existingPlannerTitleKeys = new Set(
+    plannerItems
+      .map((item) => getPlannerTitleKey(item.title))
+      .filter((titleKey) => titleKey.length > 0),
+  );
+  const importTitleKeys = new Set<string>();
+
+  return getPlannerImportTodos(todos).filter((todo) => {
+    const titleKey = getPlannerTitleKey(todo.title);
+    if (
+      titleKey.length === 0 ||
+      existingPlannerTitleKeys.has(titleKey) ||
+      importTitleKeys.has(titleKey)
+    ) {
+      return false;
+    }
+
+    importTitleKeys.add(titleKey);
+    return true;
+  });
+}
+
+function getPlannerTitleKey(title: string) {
+  return title.trim();
 }
 
 function getLocalDateInput(date: Date) {
