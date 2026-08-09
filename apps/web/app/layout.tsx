@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Personal App Platform',
-  description: 'Managed-first personal platform for web and Android.',
+  title: 'Todo Calendar',
+  description: 'Plan and complete todos across month, day, and list views.',
   icons: {
     icon: '/favicon.ico',
   },

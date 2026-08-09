@@ -20,19 +20,20 @@ The current no-auth single-user phase uses temporary permissive anon RLS policie
 
 ## Web Behavior
 
-- The todo page shows a `Draft todos` panel below the structured create-todo form.
-- The panel loads the saved draft string when the page opens.
-- Users save changes manually with the `Save draft` button.
+- The month and day view headers include a `Draft todos` button that opens the draft modal.
+- The modal loads the saved draft string when opened.
+- Users save changes explicitly with the `Save draft` button. Closing the modal discards unsaved edits.
 - The textarea stores the draft exactly as typed, including empty text and newlines.
 - Users convert draft lines into todos with the `Convert todos` button.
-- Conversion trims each draft line, skips blank lines, and creates one todo per non-empty line.
-- Converted todos send only the title to Supabase. The database supplies default status, priority, progress note, timestamps, and empty optional date/reminder fields.
-- Successfully converted todos appear in the current todo list without a page refresh.
-- A successful conversion clears the draft textarea and persists that cleared scratchpad.
-- A failed conversion leaves the draft textarea unchanged so the user can retry or edit it.
-- If loading the draft fails, only the draft panel is disabled; the structured todo workflow remains available.
+- Starting conversion saves the visible draft, trims each line, skips blank lines, and opens the normal create-todo modal for each non-empty line in order.
+- Each create modal starts with the current draft line as its title. Every field exposed by the normal create modal remains editable, including the execution date, which starts unassigned even when conversion began from a day view.
+- Successfully creating an item removes only that source line from the persisted draft before advancing to the next create modal. Duplicate titles remain separate queue entries.
+- Closing or canceling a create modal stops the sequence and returns to the underlying view. Successfully converted lines stay removed, while the current and remaining lines stay saved.
+- If todo creation fails, the current create modal remains open. If creation succeeds but draft cleanup fails, conversion stops and warns that the created todo's source line may need manual removal.
+- If loading the draft fails, only the draft modal is disabled; the normal structured todo workflow remains available.
 
 ## Future Work
 
 - Decide whether saving should also happen on debounce.
 - Decide whether converted drafts need an archive or conversion history.
+- Consider a transactional database function if draft cleanup and todo creation need atomic guarantees.
