@@ -79,6 +79,8 @@ The root route displays a full Sunday-through-Saturday month grid, including the
 
 `/day/YYYY-MM-DD` displays todo titles assigned to the requested execution date and a separate unscheduled side panel.
 
+`/today` is a device-local shortcut to the current daily view. The browser resolves its current calendar date and replaces the shortcut URL with the canonical `/day/YYYY-MM-DD` route, avoiding deployment-server timezone differences near midnight.
+
 - Dragging an unscheduled title into the main day panel assigns the displayed date.
 - Dragging a scheduled title to the unscheduled panel clears its execution date.
 - Dragging over the upper or lower half of a scheduled title inserts before or after it. Dropping elsewhere in the main panel appends to the bottom.
