@@ -214,11 +214,9 @@ export default function TodoApp({ initialMonth }: { initialMonth?: string }) {
                 return (
                   <article
                     aria-label={`Open ${dateKey}`}
-                    className={`calendar-day${
-                      isOutsideMonth ? ' is-outside-month' : ''
-                    }${isToday ? ' is-today' : ''}${
-                      dragOverDate === dateKey ? ' is-drag-over' : ''
-                    }`}
+                    className={`calendar-day${isOutsideMonth ? ' is-outside-month' : ''
+                      }${isToday ? ' is-today' : ''}${dragOverDate === dateKey ? ' is-drag-over' : ''
+                      }`}
                     key={dateKey}
                     onClick={() => router.push(`/day/${dateKey}`)}
                     onDragEnter={(event) => {
