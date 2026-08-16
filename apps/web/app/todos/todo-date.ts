@@ -91,14 +91,14 @@ export function getCalendarDateKeys(monthKey: string) {
 
 export function formatMonth(monthKey: string) {
   const [year, month] = monthKey.split('-').map(Number);
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat('en-US', {
     month: 'long',
     year: 'numeric',
   }).format(new Date(year, month - 1, 1));
 }
 
 export function formatLongDate(dateKey: string) {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat('en-US', {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -107,7 +107,7 @@ export function formatLongDate(dateKey: string) {
 }
 
 export function formatShortDate(dateKey: string) {
-  return new Intl.DateTimeFormat(undefined, {
+  return new Intl.DateTimeFormat('en-US', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

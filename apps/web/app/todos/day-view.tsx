@@ -27,6 +27,7 @@ import {
   UnscheduledTodoPanel,
 } from './todo-view-parts';
 import { useTodoCollection } from './use-todo-collection';
+import { VoiceTodoButton } from './voice-todo-button';
 
 type DateDropTargetProps = {
   dateKey: string;
@@ -438,6 +439,10 @@ export function DayView({ dateKey }: { dateKey: string }) {
           >
             Recurring todo
           </button>
+          <VoiceTodoButton
+            onCreate={createItem}
+            onRecognitionError={setWorkflowError}
+          />
           <button
             className="button button-primary"
             onClick={() => {

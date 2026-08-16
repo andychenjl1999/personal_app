@@ -33,7 +33,7 @@ Completed todos remain persisted in Supabase but are excluded from every web col
 
 ## Create and Update Modals
 
-The month and day views include **New todo** and **Recurring todo** actions. The standard create modal supports title, progress note, completion state, execution date, execution time, and reminder time. Title is required, and the remaining visible fields have safe defaults or can be left blank.
+The month and day views include **New todo**, **Voice todo**, and **Recurring todo** actions. The standard create modal supports title, progress note, completion state, execution date, execution time, and reminder time. Title is required, and the remaining visible fields have safe defaults or can be left blank.
 
 Clicking a todo title opens the update modal with the same visible fields. Clearing a visible optional input clears its persisted value. Priority and daily execution order are omitted from direct updates; the database appends or compacts daily order when the execution date or completion state changes.
 
@@ -53,6 +53,14 @@ The **Recurring todo** modal creates a bounded set of ordinary scheduled todos r
 - Supabase receives the occurrences in one bulk insert. The complete batch succeeds or fails together; retrying a successful schedule is allowed and can create duplicates.
 
 After creation, changing any generated todo affects only that todo. There is no series-wide update or deletion behavior.
+
+## Voice Todo Quick Capture
+
+The month and day headers include a **Voice todo** control backed by the browser Web Speech API. A quick tap toggles recognition, while holding for at least 300 milliseconds records until release. Keyboard activation uses the tap-toggle behavior.
+
+Recognition uses English (United States) and creates one todo immediately from the final trimmed transcript. The todo is always assigned to the device-local current date, even when another month or day is open, and normal database rules append it to that date's execution order. The app does not store audio.
+
+The control exposes listening, transcribing, saving, success, unsupported-browser, permission, no-speech, microphone, and network states. Browsers without `SpeechRecognition` or `webkitSpeechRecognition` receive a disabled control and can continue using the normal typed create flow.
 
 ## Draft Todo Conversion
 
@@ -120,4 +128,5 @@ The existing reminder email workflow continues to use `reminder_time`; this feat
 - Verify drag and drop in each supported desktop browser. On touch-only devices, execution dates remain editable through the create and update modals.
 - Verify saved draft loading and the sequential conversion flow against the target Supabase environment.
 - Verify recurring date generation, bulk creation, and daily-order assignment against the target Supabase environment.
+- Verify voice recognition gestures, microphone permission handling, and unsupported-browser behavior on each intended device over HTTPS or localhost.
 - No new environment variables, API keys, provider settings, DNS changes, or scheduled jobs are required.
