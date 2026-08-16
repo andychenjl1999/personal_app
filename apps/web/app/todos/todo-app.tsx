@@ -28,6 +28,7 @@ import {
   UnscheduledTodoPanel,
 } from './todo-view-parts';
 import { useTodoCollection } from './use-todo-collection';
+import { VoiceTodoButton } from './voice-todo-button';
 
 const weekdayLabels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -134,6 +135,10 @@ export default function TodoApp({ initialMonth }: { initialMonth?: string }) {
           >
             Recurring todo
           </button>
+          <VoiceTodoButton
+            onCreate={createItem}
+            onRecognitionError={setWorkflowError}
+          />
           <button
             className="button button-primary"
             onClick={() => {
@@ -214,9 +219,11 @@ export default function TodoApp({ initialMonth }: { initialMonth?: string }) {
                 return (
                   <article
                     aria-label={`Open ${dateKey}`}
-                    className={`calendar-day${isOutsideMonth ? ' is-outside-month' : ''
-                      }${isToday ? ' is-today' : ''}${dragOverDate === dateKey ? ' is-drag-over' : ''
-                      }`}
+                    className={`calendar-day${
+                      isOutsideMonth ? ' is-outside-month' : ''
+                    }${isToday ? ' is-today' : ''}${
+                      dragOverDate === dateKey ? ' is-drag-over' : ''
+                    }`}
                     key={dateKey}
                     onClick={() => router.push(`/day/${dateKey}`)}
                     onDragEnter={(event) => {

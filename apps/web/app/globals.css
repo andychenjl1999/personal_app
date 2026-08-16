@@ -183,6 +183,56 @@ textarea:focus-visible,
   transform: none;
 }
 
+.voice-todo-button {
+  position: relative;
+  touch-action: manipulation;
+  user-select: none;
+}
+
+.voice-todo-icon {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+}
+
+.voice-todo-button.is-listening {
+  border-color: rgba(165, 64, 54, 0.45);
+  background: #fff1ed;
+  box-shadow: 0 0 0 3px rgba(165, 64, 54, 0.1);
+  color: var(--danger);
+}
+
+.voice-todo-button.is-listening:hover {
+  border-color: rgba(165, 64, 54, 0.6);
+  background: #ffe9e3;
+}
+
+.voice-todo-button.is-listening .voice-todo-icon {
+  animation: voice-pulse 900ms ease-in-out infinite alternate;
+}
+
+.voice-todo-button.is-processing:disabled {
+  cursor: progress;
+  opacity: 1;
+}
+
+.voice-todo-button.is-success:disabled {
+  border-color: #b8cec1;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  opacity: 1;
+}
+
+@keyframes voice-pulse {
+  from {
+    transform: scale(0.9);
+  }
+
+  to {
+    transform: scale(1.12);
+  }
+}
+
 .icon-button {
   width: 42px;
   padding: 0;
@@ -1115,5 +1165,11 @@ textarea:focus-visible,
 
   .draft-modal-actions .button {
     flex: 1 1 130px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .voice-todo-button.is-listening .voice-todo-icon {
+    animation: none;
   }
 }
