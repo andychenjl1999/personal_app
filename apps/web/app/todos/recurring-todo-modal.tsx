@@ -6,9 +6,8 @@ import { dateKeyToUnixSeconds, dateToDateKey } from './todo-date';
 import { CreateTodoInput } from './todo-data';
 import {
   buildRecurringTodoDateKeys,
+  getRecurringTodoMaximumEndDate,
   getRecurringTodoValidationError,
-  RecurrenceEnd,
-  recurrenceEndOptions,
   RecurrenceUnit,
 } from './recurring-todo';
 
@@ -39,17 +38,18 @@ export function RecurringTodoModal({
   const [startDate, setStartDate] = useState(
     defaultStartDate ?? minimumStartDate,
   );
+  const [endDate, setEndDate] = useState('');
   const [interval, setInterval] = useState('1');
   const [unit, setUnit] = useState<RecurrenceUnit>('day');
-  const [end, setEnd] = useState<RecurrenceEnd>('3-months');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState('');
   const schedule = {
     startDate,
+    endDate,
     interval: Number(interval),
     unit,
-    end,
   };
+  const maximumEndDate = getRecurringTodoMaximumEndDate(startDate);
   const scheduleError = getRecurringTodoValidationError(
     schedule,
     minimumStartDate,
@@ -175,16 +175,14 @@ export function RecurringTodoModal({
 
           <label className="field">
             <span>Until</span>
-            <select
-              onChange={(event) => setEnd(event.target.value as RecurrenceEnd)}
-              value={end}
-            >
-              {recurrenceEndOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <input
+              max={maximumEndDate || undefined}
+              min={startDate || minimumStartDate}
+              onChange={(event) => setEndDate(event.target.value)}
+              required
+              type="date"
+              value={endDate}
+            />
           </label>
 
           <label className="field">

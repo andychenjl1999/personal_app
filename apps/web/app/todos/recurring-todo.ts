@@ -7,31 +7,12 @@ import {
 
 export type RecurrenceUnit = 'day' | 'weekday' | 'week' | 'month' | 'year';
 
-export type RecurrenceEnd = '3-months' | '6-months' | '1-year' | '2-years';
-
 export type RecurringTodoSchedule = {
   startDate: string;
+  endDate: string;
   interval: number;
   unit: RecurrenceUnit;
-  end: RecurrenceEnd;
 };
-
-export const recurrenceEndOptions: Array<{
-  value: RecurrenceEnd;
-  label: string;
-  monthCount: number;
-}> = [
-  { value: '3-months', label: '3 months after start', monthCount: 3 },
-  { value: '6-months', label: '6 months after start', monthCount: 6 },
-  { value: '1-year', label: '1 year after start', monthCount: 12 },
-  { value: '2-years', label: '2 years after start', monthCount: 24 },
-];
-
-function getEndMonthCount(end: RecurrenceEnd) {
-  return (
-    recurrenceEndOptions.find((option) => option.value === end)?.monthCount ?? 0
-  );
-}
 
 function addAnchoredMonths(startDate: Date, monthCount: number) {
   const targetMonthIndex = startDate.getMonth() + monthCount;
@@ -71,6 +52,23 @@ function getCalendarDayDistance(startDate: Date, endDate: Date) {
   return Math.round((endUtc - startUtc) / millisecondsPerDay);
 }
 
+function getCalendarMonthDistance(startDate: Date, endDate: Date) {
+  return (
+    (endDate.getFullYear() - startDate.getFullYear()) * 12 +
+    endDate.getMonth() -
+    startDate.getMonth()
+  );
+}
+
+export function getRecurringTodoMaximumEndDate(startDate: string) {
+  if (!isDateKey(startDate)) {
+    return '';
+  }
+
+  // Keep the existing two-year batch horizon while allowing any exact date inside it.
+  return dateToDateKey(addAnchoredMonths(dateKeyToDate(startDate), 24));
+}
+
 function shiftWeekdays(dateKey: string, amount: number) {
   let shiftedDateKey = dateKey;
   let remainingWeekdays = amount;
@@ -96,6 +94,19 @@ export function getRecurringTodoValidationError(
 
   if (schedule.startDate < minimumStartDate) {
     return 'The start date must be today or later.';
+  }
+
+  if (!isDateKey(schedule.endDate)) {
+    return 'Choose a valid end date.';
+  }
+
+  if (schedule.endDate < schedule.startDate) {
+    return 'The end date must be on or after the start date.';
+  }
+
+  const maximumEndDate = getRecurringTodoMaximumEndDate(schedule.startDate);
+  if (schedule.endDate > maximumEndDate) {
+    return 'The end date must be within 2 years of the start date.';
   }
 
   if (!Number.isSafeInteger(schedule.interval) || schedule.interval < 1) {
@@ -125,10 +136,9 @@ export function buildRecurringTodoDateKeys(
   }
 
   const startDate = dateKeyToDate(schedule.startDate);
-  const endMonthCount = getEndMonthCount(schedule.end);
-  const endDate = addAnchoredMonths(startDate, endMonthCount);
-  const endDateKey = dateToDateKey(endDate);
+  const endDate = dateKeyToDate(schedule.endDate);
   const calendarDayDistance = getCalendarDayDistance(startDate, endDate);
+  const calendarMonthDistance = getCalendarMonthDistance(startDate, endDate);
   const occurrenceDateKeys = [schedule.startDate];
 
   // An interval beyond the selected horizon still produces the required start-date todo.
@@ -138,9 +148,9 @@ export function buildRecurringTodoDateKeys(
     (schedule.unit === 'weekday' && schedule.interval > calendarDayDistance) ||
     (schedule.unit === 'week' &&
       schedule.interval > Math.floor(calendarDayDistance / 7)) ||
-    (schedule.unit === 'month' && schedule.interval > endMonthCount) ||
+    (schedule.unit === 'month' && schedule.interval > calendarMonthDistance) ||
     (schedule.unit === 'year' &&
-      schedule.interval > Math.floor(endMonthCount / 12))
+      schedule.interval > Math.floor(calendarMonthDistance / 12))
   ) {
     return occurrenceDateKeys;
   }
@@ -171,7 +181,7 @@ export function buildRecurringTodoDateKeys(
       );
     }
 
-    if (nextDateKey > endDateKey) {
+    if (nextDateKey > schedule.endDate) {
       break;
     }
 
