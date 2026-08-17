@@ -43,11 +43,11 @@ The day-list insertion controls open the same create modal with the displayed da
 
 ## Recurring Todo Creation
 
-The **Recurring todo** modal creates a bounded set of ordinary scheduled todos rather than a persisted recurrence series. It accepts a shared title, a start date, a positive whole-number interval, a frequency unit, and an inclusive duration measured from the start date. Month view defaults the start date to today, while day view defaults it to the displayed date. Start dates before today are rejected.
+The **Recurring todo** modal creates a bounded set of ordinary scheduled todos rather than a persisted recurrence series. It accepts a shared title, a start date, a required inclusive end date, a positive whole-number interval, and a frequency unit. Month view defaults the start date to today, while day view defaults it to the displayed date. The end date starts blank so it must be selected explicitly. Start dates before today are rejected.
 
 - Frequency units are calendar days, weekdays, weeks, months, and years. Weekday recurrence counts Monday through Friday and requires a weekday start.
-- The available end durations are 3 months, 6 months, 1 year, and 2 years for every frequency.
-- The start date is always included. An occurrence exactly on the calculated end date is included as well.
+- The end date can be any date from the start date through the anchored date two calendar years later. If changing the start date makes an already selected end date invalid, the chosen end date remains visible and creation is disabled until it is corrected.
+- The start date is always included. An occurrence exactly on the selected end date is included as well.
 - Monthly and yearly schedules preserve the original day-of-month anchor. Missing target dates clamp to the target month's final day, then later occurrences return to the original day when possible.
 - The modal previews the number of individual todos before creation. Each row uses normal creation defaults, receives database-owned daily order, and has no stored relationship to the other generated rows.
 - Supabase receives the occurrences in one bulk insert. The complete batch succeeds or fails together; retrying a successful schedule is allowed and can create duplicates.
@@ -127,6 +127,6 @@ The existing reminder email workflow continues to use `reminder_time`; this feat
 - Apply all execution-order migrations to each target environment before deploying the rebuilt web frontend. The frontend selects the new columns and calls the daily move and create RPCs, so it cannot provide the calendar workflow against an unmigrated database.
 - Verify drag and drop in each supported desktop browser. On touch-only devices, execution dates remain editable through the create and update modals.
 - Verify saved draft loading and the sequential conversion flow against the target Supabase environment.
-- Verify recurring date generation, bulk creation, and daily-order assignment against the target Supabase environment.
+- Verify specific-date recurrence boundaries, bulk creation, and daily-order assignment against the target Supabase environment.
 - Verify voice recognition gestures, microphone permission handling, and unsupported-browser behavior on each intended device over HTTPS or localhost.
 - No new environment variables, API keys, provider settings, DNS changes, or scheduled jobs are required.
